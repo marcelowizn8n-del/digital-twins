@@ -218,29 +218,39 @@ export default function DigitalTwinsApp() {
   return (
     <div className="space-y-6">
       {/* Header com seleção de paciente */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        <PatientSelector
-          patients={patients}
-          selectedPatientId={selectedPatientId}
-          onSelectPatient={setSelectedPatientId}
-        />
-        
-        {selectedPatient && (
-          <div className="flex gap-2 flex-wrap">
-            <Badge variant="outline" className="text-sm">
-              {selectedPatient.sex === 'M' ? 'Masculino' : 'Feminino'}
-            </Badge>
-            <Badge variant="outline" className="text-sm">
-              {currentAge} anos
-            </Badge>
-            {currentRecordData?.diseaseCodes?.map(code => (
-              <Badge key={code} variant="destructive" className="text-sm">
-                {diseaseNames[code] || code}
-              </Badge>
-            ))}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <PatientSelector
+              patients={patients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={setSelectedPatientId}
+            />
+            
+            {selectedPatient && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <span>{selectedPatient.sex === 'M' ? 'Masculino' : 'Feminino'}</span>
+                  <span className="text-slate-300">•</span>
+                  <span>{currentAge} anos</span>
+                </div>
+                {currentRecordData?.diseaseCodes && currentRecordData.diseaseCodes.length > 0 && (
+                  <>
+                    <span className="text-slate-300">|</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {currentRecordData.diseaseCodes.map(code => (
+                        <Badge key={code} variant="destructive" className="text-xs">
+                          {diseaseNames[code] || code}
+                        </Badge>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Timeline expandida */}
       <Card>
