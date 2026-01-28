@@ -25,11 +25,12 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
         (meshRef as MutableRefObject<THREE.Mesh | null>).current = mesh;
         // Material cinza claro suave - estilo referência médica
         mesh.material = new THREE.MeshStandardMaterial({
-          color: 0xd8d4d0,  // Cinza claro
-          roughness: 0.45,
+          color: 0xe8e4e0,  // Cinza claro quente
+          roughness: 0.4,
           metalness: 0.0,
           flatShading: false,
           envMapIntensity: 0.8,
+          side: THREE.DoubleSide,  // Renderizar ambos os lados
         });
         mesh.castShadow = true;
         mesh.receiveShadow = true;
