@@ -1,0 +1,69 @@
+{
+  "name": "Digital Twins Human Avatar",
+  "version": "1.0",
+  "generator": "Trimesh + pygltflib",
+  "morphTargets": {
+    "Weight": {
+      "description": "Overall body mass scaling",
+      "range": [
+        -1.0,
+        2.0
+      ],
+      "clinicalMapping": "BMI changes"
+    },
+    "AbdomenGirth": {
+      "description": "Belly/abdominal size",
+      "range": [
+        0.0,
+        2.0
+      ],
+      "clinicalMapping": "Waist circumference, metabolic syndrome"
+    },
+    "MuscleMass": {
+      "description": "Arm and leg muscle thickness",
+      "range": [
+        -1.0,
+        2.0
+      ],
+      "clinicalMapping": "Physical activity level, sarcopenia"
+    },
+    "Posture": {
+      "description": "Spine curvature and shoulder position",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "clinicalMapping": "Aging effect, chronic fatigue"
+    },
+    "DiabetesEffect": {
+      "description": "Composite body changes from diabetes",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "clinicalMapping": "Type 2 diabetes progression"
+    },
+    "HeartDiseaseEffect": {
+      "description": "Body changes from cardiovascular conditions",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "clinicalMapping": "Heart failure, reduced activity"
+    },
+    "HypertensionEffect": {
+      "description": "Body changes associated with hypertension",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "clinicalMapping": "Hypertension, metabolic changes"
+    }
+  },
+  "files": {
+    "avatar_morphable.glb": "Base avatar with all morph targets at 0",
+    "avatar_baseline.glb": "Healthy baseline state",
+    "avatar_clinical.glb": "Clinical condition state with morphs applied"
+  },
+  "threeJsUsage": "\n// Load the morphable avatar\nconst loader = new GLTFLoader();\nloader.load('avatar_morphable.glb', (gltf) => {\n    const avatar = gltf.scene.children[0];\n    const mesh = avatar.children[0]; // or traverse to find mesh\n    \n    // Access morph targets by name\n    const morphDict = mesh.morphTargetDictionary;\n    const influences = mesh.morphTargetInfluences;\n    \n    // Set morph target values (0-1 range typically)\n    influences[morphDict['Weight']] = 0.5;\n    influences[morphDict['AbdomenGirth']] = 0.3;\n    influences[morphDict['MuscleMass']] = 0.2;\n    influences[morphDict['Posture']] = 0.1;\n    \n    // For clinical conditions\n    influences[morphDict['DiabetesEffect']] = severity;\n});\n"
+}
