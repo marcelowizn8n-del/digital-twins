@@ -15,22 +15,35 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
   const { scene } = useGLTF('/models/avatar_morphable.glb');
   const meshRef = useRef<THREE.Mesh | null>(null);
   const groupRef = useRef<THREE.Group>(null);
+  
+  // Usar ref para sempre ter o valor mais recente dos morphTargets
+  const morphTargetsRef = useRef<MorphTargets>(morphTargets);
+  
+  // Atualizar ref sempre que morphTargets mudar
+  useEffect(() => {
+    morphTargetsRef.current = morphTargets;
+  }, [morphTargets]);
 
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
   useEffect(() => {
     clonedScene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh && (child as THREE.Mesh).morphTargetDictionary) {
+      if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        (meshRef as MutableRefObject<THREE.Mesh | null>).current = mesh;
+        
+        // Verificar se tem morphTargetInfluences (pode não ter dictionary)
+        if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
+          (meshRef as MutableRefObject<THREE.Mesh | null>).current = mesh;
+        }
+        
         // Material cinza claro suave - estilo referência médica
         mesh.material = new THREE.MeshStandardMaterial({
-          color: 0xe8e4e0,  // Cinza claro quente
+          color: 0xe8e4e0,
           roughness: 0.4,
           metalness: 0.0,
           flatShading: false,
           envMapIntensity: 0.8,
-          side: THREE.DoubleSide,  // Renderizar ambos os lados
+          side: THREE.DoubleSide,
         });
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -54,18 +67,17 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
     if (!currentMesh?.morphTargetInfluences) return;
 
     const influences = currentMesh.morphTargetInfluences;
-    const lerpFactor = 0.1; // Mais rápido para feedback visual
+    const lerpFactor = 0.15; // Mais rápido para feedback visual
+    
+    // Usar o ref para obter o valor mais recente
+    const currentMorphTargets = morphTargetsRef.current;
 
-    Object.entries(morphTargets ?? {}).forEach(([key, value]) => {
-      // Tentar primeiro pelo dictionary do modelo, depois pelo mapa fixo
-      const dict = currentMesh.morphTargetDictionary;
-      let index = dict?.[key];
-      if (index === undefined) {
-        index = morphIndexMap[key];
-      }
+    Object.entries(currentMorphTargets ?? {}).forEach(([key, value]) => {
+      const index = morphIndexMap[key];
       
       if (index !== undefined && influences[index] !== undefined) {
-        influences[index] += ((value ?? 0) - influences[index]) * lerpFactor;
+        const targetValue = value ?? 0;
+        influences[index] += (targetValue - influences[index]) * lerpFactor;
       }
     });
   });
