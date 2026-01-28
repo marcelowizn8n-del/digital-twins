@@ -3,55 +3,55 @@
     "Weight": {
       "index": 0,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "AbdomenGirth": {
       "index": 1,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "MuscleMass": {
       "index": 2,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "Posture": {
       "index": 3,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "DiabetesEffect": {
       "index": 4,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "HypertensionEffect": {
       "index": 5,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     },
     "HeartDiseaseEffect": {
       "index": 6,
       "range": [
-        0.0,
-        1.0
+        0,
+        1
       ]
     }
   },
-  "vertexCount": 2822,
-  "faceCount": 5616,
-  "height": 1.3646090030670166,
-  "source": "Blender 3.4.1"
+  "vertexCount": 12588,
+  "faceCount": 25280,
+  "height": 1.952114462852478,
+  "source": "Procedural Anatomic Model v2"
 }
