@@ -55,7 +55,7 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
 
   return (
     <group ref={groupRef} position={position}>
-      <primitive object={clonedScene} scale={1.0} position={[0, -1.0, 0]} />
+      <primitive object={clonedScene} scale={1.0} position={[0, 0, 0]} />
     </group>
   );
 }
@@ -91,8 +91,8 @@ function StudioLighting() {
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 0.5, 3.5);
-    camera.lookAt(0, 0.3, 0);
+    camera.position.set(0, 0.9, 3.0);
+    camera.lookAt(0, 0.85, 0);
   }, [camera]);
   return null;
 }
@@ -103,7 +103,7 @@ interface ThreeViewerProps {
 
 function Floor() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.0, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[20, 20]} />
       <meshStandardMaterial 
         color="#b8b8b8" 
@@ -116,8 +116,8 @@ function Floor() {
 
 function BackWall() {
   return (
-    <mesh position={[0, 2, -3]} receiveShadow>
-      <planeGeometry args={[20, 10]} />
+    <mesh position={[0, 3, -3]} receiveShadow>
+      <planeGeometry args={[20, 12]} />
       <meshStandardMaterial color="#c8c8c8" roughness={1.0} metalness={0} />
     </mesh>
   );
@@ -149,7 +149,7 @@ export default function ThreeViewer({ morphTargets }: ThreeViewerProps) {
           enableZoom={true}
           minDistance={1.5}
           maxDistance={8}
-          target={[0, 0.3, 0]}
+          target={[0, 0.85, 0]}
           maxPolarAngle={Math.PI * 0.85}
           minPolarAngle={Math.PI * 0.1}
         />
