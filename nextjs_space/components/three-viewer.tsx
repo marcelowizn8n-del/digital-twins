@@ -1,11 +1,10 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useMemo, MutableRefObject, useState } from 'react';
+import { Suspense, useRef, useEffect, useMemo, MutableRefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Center } from '@react-three/drei';
 import * as THREE from 'three';
 import { MorphTargets } from '@/lib/clinical-mapper';
-import { Loader2 } from 'lucide-react';
 
 interface AvatarProps {
   morphTargets: MorphTargets;
@@ -79,23 +78,6 @@ interface ThreeViewerProps {
 }
 
 export default function ThreeViewer({ morphTargets }: ThreeViewerProps) {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready) {
-    return (
-      <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-slate-100 to-slate-200 rounded-lg flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-          <p className="text-sm text-slate-500">Inicializando...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-slate-100 to-slate-200 rounded-lg overflow-hidden">
       <Canvas shadows>

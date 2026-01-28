@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ComponentType } from 'react';
+import dynamic from 'next/dynamic';
 import { MorphTargets } from '@/lib/clinical-mapper';
 import { Loader2 } from 'lucide-react';
 
@@ -19,19 +19,11 @@ function LoadingPlaceholder() {
   );
 }
 
+const ThreeViewer = dynamic(() => import('./three-viewer'), {
+  ssr: false,
+  loading: () => <LoadingPlaceholder />,
+});
+
 export default function ViewerLoader({ morphTargets }: ViewerLoaderProps) {
-  const [ThreeViewer, setThreeViewer] = useState<ComponentType<{ morphTargets: MorphTargets }> | null>(null);
-
-  useEffect(() => {
-    // Only import on client side
-    import('./three-viewer').then((mod) => {
-      setThreeViewer(() => mod.default);
-    });
-  }, []);
-
-  if (!ThreeViewer) {
-    return <LoadingPlaceholder />;
-  }
-
   return <ThreeViewer morphTargets={morphTargets} />;
 }
