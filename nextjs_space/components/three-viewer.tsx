@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useMemo, MutableRefObject } from 'react';
+import { Suspense, useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
+import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { MorphTargets } from '@/lib/clinical-mapper';
 
@@ -12,46 +12,11 @@ interface AvatarProps {
 }
 
 function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
-  const { scene } = useGLTF('/models/avatar_morphable.glb');
+  const gltf = useGLTF('/models/avatar_morphable.glb');
   const meshRef = useRef<THREE.Mesh | null>(null);
-  const groupRef = useRef<THREE.Group>(null);
-  
-  // Usar ref para sempre ter o valor mais recente dos morphTargets
-  const morphTargetsRef = useRef<MorphTargets>(morphTargets);
-  
-  // Atualizar ref sempre que morphTargets mudar
-  useEffect(() => {
-    morphTargetsRef.current = morphTargets;
-  }, [morphTargets]);
+  const [isReady, setIsReady] = useState(false);
 
-  const clonedScene = useMemo(() => scene.clone(true), [scene]);
-
-  useEffect(() => {
-    clonedScene.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        
-        // Verificar se tem morphTargetInfluences (pode não ter dictionary)
-        if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
-          (meshRef as MutableRefObject<THREE.Mesh | null>).current = mesh;
-        }
-        
-        // Material cinza claro suave - estilo referência médica
-        mesh.material = new THREE.MeshStandardMaterial({
-          color: 0xe8e4e0,
-          roughness: 0.4,
-          metalness: 0.0,
-          flatShading: false,
-          envMapIntensity: 0.8,
-          side: THREE.DoubleSide,
-        });
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-      }
-    });
-  }, [clonedScene]);
-
-  // Mapeamento fixo de nomes para índices (conforme ordem no GLB)
+  // Mapeamento fixo de nomes para índices
   const morphIndexMap: Record<string, number> = {
     'Weight': 0,
     'AbdomenGirth': 1,
@@ -62,29 +27,54 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
     'HeartDiseaseEffect': 6,
   };
 
-  useFrame(() => {
-    const currentMesh = meshRef.current;
-    if (!currentMesh?.morphTargetInfluences) return;
-
-    const influences = currentMesh.morphTargetInfluences;
-    const lerpFactor = 0.15; // Mais rápido para feedback visual
+  useEffect(() => {
+    if (!gltf.scene) return;
     
-    // Usar o ref para obter o valor mais recente
-    const currentMorphTargets = morphTargetsRef.current;
+    gltf.scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        
+        // Configurar material
+        mesh.material = new THREE.MeshStandardMaterial({
+          color: 0xe8e4e0,
+          roughness: 0.4,
+          metalness: 0.0,
+          flatShading: false,
+          envMapIntensity: 0.8,
+          side: THREE.DoubleSide,
+        });
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        
+        // Guardar referência do mesh com morph targets
+        if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
+          meshRef.current = mesh;
+          setIsReady(true);
+        }
+      }
+    });
+  }, [gltf.scene]);
 
-    Object.entries(currentMorphTargets ?? {}).forEach(([key, value]) => {
+  // Aplicar morph targets a cada frame
+  useFrame(() => {
+    const mesh = meshRef.current;
+    if (!mesh?.morphTargetInfluences || !morphTargets) return;
+
+    const influences = mesh.morphTargetInfluences;
+    const lerpFactor = 0.12;
+
+    Object.entries(morphTargets).forEach(([key, value]) => {
       const index = morphIndexMap[key];
-      
-      if (index !== undefined && influences[index] !== undefined) {
-        const targetValue = value ?? 0;
+      if (index !== undefined && index < influences.length) {
+        const targetValue = typeof value === 'number' ? value : 0;
         influences[index] += (targetValue - influences[index]) * lerpFactor;
       }
     });
   });
 
   return (
-    <group ref={groupRef} position={position}>
-      <primitive object={clonedScene} scale={1.0} position={[0, 0, 0]} />
+    <group position={position}>
+      <primitive object={gltf.scene} scale={1.0} />
     </group>
   );
 }
@@ -92,7 +82,6 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
 function StudioLighting() {
   return (
     <>
-      {/* Key light - frontal suave */}
       <directionalLight 
         position={[2, 4, 4]} 
         intensity={1.5} 
@@ -101,17 +90,11 @@ function StudioLighting() {
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0001}
       />
-      {/* Fill light - lateral esquerda */}
       <directionalLight position={[-4, 3, 2]} intensity={0.8} color="#f0f5ff" />
-      {/* Fill light - lateral direita */}
       <directionalLight position={[4, 3, 2]} intensity={0.8} color="#fff5f0" />
-      {/* Rim/Back light */}
       <directionalLight position={[0, 3, -4]} intensity={0.6} color="#ffffff" />
-      {/* Top light suave */}
       <directionalLight position={[0, 8, 0]} intensity={0.4} color="#ffffff" />
-      {/* Ambiente forte para preencher sombras */}
       <ambientLight intensity={0.7} color="#f8f8f8" />
-      {/* Hemisphere light para gradiente natural */}
       <hemisphereLight args={['#ffffff', '#c0c0c0', 0.5]} />
     </>
   );
@@ -134,11 +117,7 @@ function Floor() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[20, 20]} />
-      <meshStandardMaterial 
-        color="#b8b8b8" 
-        roughness={0.95} 
-        metalness={0} 
-      />
+      <meshStandardMaterial color="#b8b8b8" roughness={0.95} metalness={0} />
     </mesh>
   );
 }

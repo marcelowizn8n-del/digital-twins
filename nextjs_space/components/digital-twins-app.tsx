@@ -3,10 +3,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import PatientSelector from './patient-selector';
 import TimelineSlider from './timeline-slider';
-import MorphStatsPanel from './morph-stats-panel';
 import ViewerLoader from './viewer-loader';
 import { ClinicalToBodyMapper, MorphTargets } from '@/lib/clinical-mapper';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Info, TrendingUp, TrendingDown, Minus, Activity, Scale, Ruler, Heart, Droplets, Zap, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ClinicalRecord {
   id: string;
@@ -27,22 +32,37 @@ interface Patient {
 }
 
 const defaultMorphTargets: MorphTargets = {
-  Weight: 0.3,
-  AbdomenGirth: 0.2,
-  MuscleMass: 0.5,
+  Weight: 0.2,
+  AbdomenGirth: 0.15,
+  MuscleMass: 0.4,
   Posture: 0.1,
   DiabetesEffect: 0,
   HeartDiseaseEffect: 0,
   HypertensionEffect: 0,
 };
 
+const diseaseNames: Record<string, string> = {
+  'E11': 'Diabetes Tipo 2',
+  'I10': 'Hipertensão',
+  'I25': 'Doença Cardíaca',
+};
+
+function interpolateNumber(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
 export default function DigitalTwinsApp() {
   const [mounted, setMounted] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
-  const [currentYear, setCurrentYear] = useState(2023);
+  const [currentYear, setCurrentYear] = useState(2024);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dados');
+  const [simulationMode, setSimulationMode] = useState(false);
+  const [simulatedWeight, setSimulatedWeight] = useState(0);
+  const [simulatedAbdomen, setSimulatedAbdomen] = useState(0);
+  const [techInfoOpen, setTechInfoOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -77,33 +97,36 @@ export default function DigitalTwinsApp() {
 
   const { minYear, maxYear } = useMemo(() => {
     const records = selectedPatient?.records ?? [];
-    if (records.length === 0) return { minYear: 2023, maxYear: 2024 };
-    const years = records.map((r) => r?.year ?? 2023);
+    if (records.length === 0) return { minYear: 2019, maxYear: 2024 };
+    const years = records.map((r) => r?.year ?? 2024);
     return { minYear: Math.min(...years), maxYear: Math.max(...years) };
   }, [selectedPatient]);
 
   useEffect(() => {
-    if (selectedPatient?.records?.[0]) {
-      setCurrentYear(selectedPatient.records[0].year);
+    if (selectedPatient?.records?.length) {
+      const lastRecord = selectedPatient.records[selectedPatient.records.length - 1];
+      setCurrentYear(lastRecord.year);
     }
   }, [selectedPatientId, selectedPatient]);
 
-  const { interpolatedMorphTargets, previousMorphTargets } = useMemo(() => {
+  // Reset simulation when patient changes
+  useEffect(() => {
+    setSimulationMode(false);
+    setSimulatedWeight(0);
+    setSimulatedAbdomen(0);
+  }, [selectedPatientId]);
+
+  // Calcular dados interpolados do registro atual
+  const currentRecordData = useMemo(() => {
     const records = selectedPatient?.records ?? [];
-    if (records.length === 0) {
-      return { interpolatedMorphTargets: defaultMorphTargets, previousMorphTargets: undefined };
-    }
-
-    if (records.length === 1) {
-      return {
-        interpolatedMorphTargets: records[0]?.morphTargets ?? defaultMorphTargets,
-        previousMorphTargets: undefined,
-      };
-    }
-
+    if (records.length === 0) return null;
+    
+    if (records.length === 1) return records[0];
+    
+    // Encontrar registros para interpolação
     let startRecord = records[0];
     let endRecord = records[records.length - 1];
-
+    
     for (let i = 0; i < records.length - 1; i++) {
       if (records[i]?.year <= currentYear && records[i + 1]?.year >= currentYear) {
         startRecord = records[i];
@@ -111,22 +134,56 @@ export default function DigitalTwinsApp() {
         break;
       }
     }
-
-    const startYear = startRecord?.year ?? minYear;
-    const endYear = endRecord?.year ?? maxYear;
-    const t = endYear === startYear ? 0 : (currentYear - startYear) / (endYear - startYear);
-
-    const interpolated = ClinicalToBodyMapper.interpolate(
-      startRecord?.morphTargets ?? defaultMorphTargets,
-      endRecord?.morphTargets ?? defaultMorphTargets,
-      Math.max(0, Math.min(1, t))
-    );
-
+    
+    if (currentYear <= startRecord.year) return startRecord;
+    if (currentYear >= endRecord.year) return endRecord;
+    
+    const t = (currentYear - startRecord.year) / (endRecord.year - startRecord.year);
+    
     return {
-      interpolatedMorphTargets: interpolated,
-      previousMorphTargets: startRecord?.morphTargets,
+      ...startRecord,
+      year: currentYear,
+      heightCm: interpolateNumber(startRecord.heightCm, endRecord.heightCm, t),
+      weightKg: interpolateNumber(startRecord.weightKg, endRecord.weightKg, t),
+      diseaseCodes: t < 0.5 ? startRecord.diseaseCodes : endRecord.diseaseCodes,
+      morphTargets: ClinicalToBodyMapper.interpolate(
+        startRecord.morphTargets ?? defaultMorphTargets,
+        endRecord.morphTargets ?? defaultMorphTargets,
+        t
+      ),
     };
-  }, [selectedPatient, currentYear, minYear, maxYear]);
+  }, [selectedPatient, currentYear]);
+
+  // Dados do primeiro registro (baseline)
+  const baselineRecord = useMemo(() => {
+    return selectedPatient?.records?.[0] ?? null;
+  }, [selectedPatient]);
+
+  // Morph targets finais (com simulação se ativa)
+  const finalMorphTargets = useMemo(() => {
+    const baseMorphTargets = currentRecordData?.morphTargets ?? defaultMorphTargets;
+    
+    if (!simulationMode) return baseMorphTargets;
+    
+    return {
+      ...baseMorphTargets,
+      Weight: Math.max(0, Math.min(1, baseMorphTargets.Weight + simulatedWeight)),
+      AbdomenGirth: Math.max(0, Math.min(1, baseMorphTargets.AbdomenGirth + simulatedAbdomen)),
+    };
+  }, [currentRecordData, simulationMode, simulatedWeight, simulatedAbdomen]);
+
+  // Calcular mudança desde baseline
+  const changeFromBaseline = useMemo(() => {
+    if (!baselineRecord || !currentRecordData) return null;
+    
+    const weightChange = currentRecordData.weightKg - baselineRecord.weightKg;
+    const weightPct = (weightChange / baselineRecord.weightKg) * 100;
+    
+    return {
+      weightKg: weightChange,
+      weightPct,
+    };
+  }, [baselineRecord, currentRecordData]);
 
   if (!mounted || loading) {
     return (
@@ -156,31 +213,416 @@ export default function DigitalTwinsApp() {
     );
   }
 
+  const currentAge = selectedPatient ? new Date().getFullYear() - selectedPatient.birthYear : 0;
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="space-y-6">
+    <div className="space-y-6">
+      {/* Header com seleção de paciente */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <PatientSelector
           patients={patients}
           selectedPatientId={selectedPatientId}
           onSelectPatient={setSelectedPatientId}
         />
-        <TimelineSlider
-          minYear={minYear}
-          maxYear={maxYear}
-          currentYear={currentYear}
-          onChange={setCurrentYear}
-        />
+        
+        {selectedPatient && (
+          <div className="flex gap-2 flex-wrap">
+            <Badge variant="outline" className="text-sm">
+              {selectedPatient.sex === 'M' ? 'Masculino' : 'Feminino'}
+            </Badge>
+            <Badge variant="outline" className="text-sm">
+              {currentAge} anos
+            </Badge>
+            {currentRecordData?.diseaseCodes?.map(code => (
+              <Badge key={code} variant="destructive" className="text-sm">
+                {diseaseNames[code] || code}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="lg:col-span-1 h-[500px] lg:h-auto">
-        <ViewerLoader morphTargets={interpolatedMorphTargets} />
-      </div>
+      {/* Timeline expandida */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Activity className="w-5 h-5" />
+            Linha do Tempo Clínica
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TimelineSlider
+            minYear={minYear}
+            maxYear={maxYear}
+            currentYear={currentYear}
+            onChange={setCurrentYear}
+            records={selectedPatient?.records}
+          />
+        </CardContent>
+      </Card>
 
-      <div>
-        <MorphStatsPanel
-          morphTargets={interpolatedMorphTargets}
-          previousTargets={previousMorphTargets}
-        />
+      {/* Grid principal */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna esquerda - Dados do paciente */}
+        <div className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full">
+              <TabsTrigger value="dados" className="flex-1">Dados Clínicos</TabsTrigger>
+              <TabsTrigger value="simulacao" className="flex-1">Simulação</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="dados" className="space-y-4 mt-4">
+              {/* Valores Absolutos */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Métricas Atuais ({currentYear})</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-5 h-5 text-blue-600" />
+                      <span className="font-medium">Peso</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold">{currentRecordData?.weightKg?.toFixed(1) ?? '--'} kg</div>
+                      {changeFromBaseline && (
+                        <div className={`text-sm flex items-center gap-1 justify-end ${
+                          changeFromBaseline.weightKg > 0 ? 'text-red-600' : 
+                          changeFromBaseline.weightKg < 0 ? 'text-green-600' : 'text-gray-500'
+                        }`}>
+                          {changeFromBaseline.weightKg > 0 ? <TrendingUp className="w-4 h-4" /> : 
+                           changeFromBaseline.weightKg < 0 ? <TrendingDown className="w-4 h-4" /> : 
+                           <Minus className="w-4 h-4" />}
+                          {changeFromBaseline.weightKg > 0 ? '+' : ''}{changeFromBaseline.weightKg.toFixed(1)} kg 
+                          ({changeFromBaseline.weightPct > 0 ? '+' : ''}{changeFromBaseline.weightPct.toFixed(1)}%)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Ruler className="w-5 h-5 text-green-600" />
+                      <span className="font-medium">Altura</span>
+                    </div>
+                    <div className="text-xl font-bold">{currentRecordData?.heightCm?.toFixed(0) ?? '--'} cm</div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-purple-600" />
+                      <span className="font-medium">IMC</span>
+                    </div>
+                    <div className="text-right">
+                      {currentRecordData && (
+                        <>
+                          <div className="text-xl font-bold">
+                            {(currentRecordData.weightKg / Math.pow(currentRecordData.heightCm / 100, 2)).toFixed(1)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {(() => {
+                              const bmi = currentRecordData.weightKg / Math.pow(currentRecordData.heightCm / 100, 2);
+                              if (bmi < 18.5) return 'Abaixo do peso';
+                              if (bmi < 25) return 'Normal';
+                              if (bmi < 30) return 'Sobrepeso';
+                              return 'Obesidade';
+                            })()}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Impacto no Avatar */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Impacto no Avatar 3D</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {[
+                    { key: 'Weight', label: 'Distribuição de Massa', icon: Scale, color: 'blue' },
+                    { key: 'AbdomenGirth', label: 'Circunferência Abdominal', icon: Activity, color: 'orange' },
+                    { key: 'MuscleMass', label: 'Massa Muscular', icon: Zap, color: 'green' },
+                    { key: 'Posture', label: 'Postura', icon: Ruler, color: 'purple' },
+                  ].map(({ key, label, icon: Icon, color }) => (
+                    <div key={key} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="flex items-center gap-1">
+                          <Icon className={`w-4 h-4 text-${color}-600`} />
+                          {label}
+                        </span>
+                        <span className="font-medium">
+                          {((finalMorphTargets[key as keyof MorphTargets] ?? 0) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-${color}-500 transition-all duration-500`}
+                          style={{ 
+                            width: `${(finalMorphTargets[key as keyof MorphTargets] ?? 0) * 100}%`,
+                            backgroundColor: color === 'blue' ? '#3b82f6' : 
+                                           color === 'orange' ? '#f97316' : 
+                                           color === 'green' ? '#22c55e' : '#8b5cf6'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Efeitos de Doenças */}
+                  {(finalMorphTargets.DiabetesEffect > 0 || finalMorphTargets.HypertensionEffect > 0 || finalMorphTargets.HeartDiseaseEffect > 0) && (
+                    <div className="pt-2 border-t mt-2">
+                      <p className="text-xs text-gray-500 mb-2">Efeitos de Condições Clínicas:</p>
+                      {finalMorphTargets.DiabetesEffect > 0 && (
+                        <Badge variant="outline" className="mr-1 mb-1 text-xs">
+                          <Droplets className="w-3 h-3 mr-1" />
+                          Diabetes: {(finalMorphTargets.DiabetesEffect * 100).toFixed(0)}%
+                        </Badge>
+                      )}
+                      {finalMorphTargets.HypertensionEffect > 0 && (
+                        <Badge variant="outline" className="mr-1 mb-1 text-xs">
+                          <Activity className="w-3 h-3 mr-1" />
+                          Hipertensão: {(finalMorphTargets.HypertensionEffect * 100).toFixed(0)}%
+                        </Badge>
+                      )}
+                      {finalMorphTargets.HeartDiseaseEffect > 0 && (
+                        <Badge variant="outline" className="mr-1 mb-1 text-xs">
+                          <Heart className="w-3 h-3 mr-1" />
+                          Cardiopatia: {(finalMorphTargets.HeartDiseaseEffect * 100).toFixed(0)}%
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="simulacao" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Settings2 className="w-5 h-5" />
+                    Modo Simulação "E se..."
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={simulationMode ? "default" : "outline"}
+                      onClick={() => setSimulationMode(!simulationMode)}
+                      className="w-full"
+                    >
+                      {simulationMode ? 'Desativar Simulação' : 'Ativar Simulação'}
+                    </Button>
+                  </div>
+                  
+                  {simulationMode && (
+                    <>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <label className="text-sm font-medium">Variação de Peso</label>
+                          <span className="text-sm text-gray-500">
+                            {simulatedWeight > 0 ? '+' : ''}{(simulatedWeight * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <Slider
+                          value={[simulatedWeight * 100]}
+                          onValueChange={(v) => setSimulatedWeight(v[0] / 100)}
+                          min={-30}
+                          max={30}
+                          step={5}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>Perder peso</span>
+                          <span>Ganhar peso</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <label className="text-sm font-medium">Circunferência Abdominal</label>
+                          <span className="text-sm text-gray-500">
+                            {simulatedAbdomen > 0 ? '+' : ''}{(simulatedAbdomen * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <Slider
+                          value={[simulatedAbdomen * 100]}
+                          onValueChange={(v) => setSimulatedAbdomen(v[0] / 100)}
+                          min={-30}
+                          max={30}
+                          step={5}
+                          className="w-full"
+                        />
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>Reduzir</span>
+                          <span>Aumentar</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSimulatedWeight(-0.15);
+                            setSimulatedAbdomen(-0.1);
+                          }}
+                          className="flex-1 text-xs"
+                        >
+                          Perder 5kg
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSimulatedWeight(0.2);
+                            setSimulatedAbdomen(0.15);
+                          }}
+                          className="flex-1 text-xs"
+                        >
+                          Ganhar 10kg
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSimulatedWeight(0);
+                            setSimulatedAbdomen(0);
+                          }}
+                          className="flex-1 text-xs"
+                        >
+                          Reset
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-4">
+                  <div className="flex gap-2">
+                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-800">
+                      Use os controles acima para simular cenários "e se" e visualizar como mudanças 
+                      no peso ou circunferência abdominal afetariam a aparência do paciente.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Coluna central - Visualizador 3D */}
+        <div className="lg:col-span-1 h-[500px] lg:h-[600px]">
+          <ViewerLoader morphTargets={finalMorphTargets} />
+        </div>
+
+        {/* Coluna direita - Histórico e Tecnologia */}
+        <div className="space-y-4">
+          {/* Histórico de Registros */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Histórico Clínico</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {selectedPatient?.records?.map((record, idx) => (
+                  <div 
+                    key={record.id}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      record.year === currentYear 
+                        ? 'bg-blue-50 border-blue-300' 
+                        : 'bg-white hover:bg-gray-50'
+                    }`}
+                    onClick={() => setCurrentYear(record.year)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">{record.year}</span>
+                      <span className="text-sm text-gray-600">{record.weightKg} kg</span>
+                    </div>
+                    {record.diseaseCodes.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {record.diseaseCodes.map(code => (
+                          <Badge key={code} variant="secondary" className="text-xs">
+                            {diseaseNames[code] || code}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {record.notes && (
+                      <p className="text-xs text-gray-500 mt-1">{record.notes}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Seção Sobre a Tecnologia */}
+          <Collapsible open={techInfoOpen} onOpenChange={setTechInfoOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                  <CardTitle className="text-base flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Info className="w-5 h-5" />
+                      Sobre a Tecnologia
+                    </span>
+                    {techInfoOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4 text-sm">
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Engine 3D</h4>
+                    <p className="text-gray-600">Three.js + React Three Fiber</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Formato do Modelo</h4>
+                    <p className="text-gray-600">glTF/GLB com Morph Targets</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Resolução do Avatar</h4>
+                    <p className="text-gray-600">~60.000 vértices, 100.000 faces</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Algoritmo de Mapeamento</h4>
+                    <p className="text-gray-600">
+                      Conversão de parâmetros clínicos (IMC, códigos CID-10) 
+                      para deformações morfológicas baseadas em evidências.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Morph Targets</h4>
+                    <ul className="text-gray-600 list-disc list-inside">
+                      <li>Weight - Distribuição de massa corporal</li>
+                      <li>AbdomenGirth - Circunferência abdominal</li>
+                      <li>MuscleMass - Massa muscular</li>
+                      <li>Posture - Postura e curvatura</li>
+                      <li>DiabetesEffect - Efeito de diabetes</li>
+                      <li>HypertensionEffect - Efeito de hipertensão</li>
+                      <li>HeartDiseaseEffect - Efeito de cardiopatia</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-800">Limitações</h4>
+                    <ul className="text-gray-600 list-disc list-inside">
+                      <li>Visualização aproximada, não diagnóstica</li>
+                      <li>Baseado em modelos populacionais</li>
+                      <li>Não considera variações individuais</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
       </div>
     </div>
   );
