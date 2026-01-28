@@ -7,172 +7,253 @@ async function main() {
   await prisma.clinicalRecord.deleteMany();
   await prisma.patient.deleteMany();
 
-  // Patient 1: João Silva - Progressão para Diabetes
-  const joao = await prisma.patient.create({
+  // Patient 1: Pedro Magro - Paciente magro e saudável (REFERÊNCIA)
+  const pedro = await prisma.patient.create({
     data: {
-      name: 'João Silva',
+      name: 'Pedro Magro',
       sex: 'M',
-      birthYear: 1981,
+      birthYear: 1990,
+      records: {
+        create: [
+          {
+            year: 2022,
+            heightCm: 178,
+            weightKg: 68,
+            diseaseCodes: [],
+            notes: 'Atleta amador - excelente condição física'
+          },
+          {
+            year: 2023,
+            heightCm: 178,
+            weightKg: 69,
+            diseaseCodes: [],
+            notes: 'Mantém rotina de exercícios'
+          },
+          {
+            year: 2024,
+            heightCm: 178,
+            weightKg: 70,
+            diseaseCodes: [],
+            notes: 'Saudável - sem condições crônicas'
+          }
+        ]
+      }
+    }
+  });
+
+  // Patient 2: Roberto Obeso - Obesidade severa + todas as condições
+  const roberto = await prisma.patient.create({
+    data: {
+      name: 'Roberto Obeso',
+      sex: 'M',
+      birthYear: 1970,
+      records: {
+        create: [
+          {
+            year: 2019,
+            heightCm: 172,
+            weightKg: 95,
+            diseaseCodes: [],
+            notes: 'Obesidade grau I'
+          },
+          {
+            year: 2020,
+            heightCm: 172,
+            weightKg: 102,
+            diseaseCodes: ['E11'],
+            notes: 'Diabetes diagnosticado - obesidade grau II'
+          },
+          {
+            year: 2021,
+            heightCm: 172,
+            weightKg: 108,
+            diseaseCodes: ['E11', 'I10'],
+            notes: 'Hipertensão diagnosticada'
+          },
+          {
+            year: 2022,
+            heightCm: 172,
+            weightKg: 115,
+            diseaseCodes: ['E11', 'I10'],
+            notes: 'Obesidade grau III - indicação bariátrica'
+          },
+          {
+            year: 2023,
+            heightCm: 172,
+            weightKg: 120,
+            diseaseCodes: ['E11', 'I10', 'I25'],
+            notes: 'Doença cardíaca - angina de esforço'
+          },
+          {
+            year: 2024,
+            heightCm: 172,
+            weightKg: 125,
+            diseaseCodes: ['E11', 'I10', 'I25'],
+            notes: 'IMC 42.3 - obesidade mórbida com comorbidades'
+          }
+        ]
+      }
+    }
+  });
+
+  // Patient 3: Ana Transformação - Caso de perda de peso dramática
+  const ana = await prisma.patient.create({
+    data: {
+      name: 'Ana Transformação',
+      sex: 'F',
+      birthYear: 1985,
+      records: {
+        create: [
+          {
+            year: 2019,
+            heightCm: 165,
+            weightKg: 98,
+            diseaseCodes: ['E11', 'I10'],
+            notes: 'Obesidade + diabetes + hipertensão'
+          },
+          {
+            year: 2020,
+            heightCm: 165,
+            weightKg: 95,
+            diseaseCodes: ['E11', 'I10'],
+            notes: 'Iniciou programa de emagrecimento'
+          },
+          {
+            year: 2021,
+            heightCm: 165,
+            weightKg: 85,
+            diseaseCodes: ['E11'],
+            notes: 'Hipertensão controlada sem medicação'
+          },
+          {
+            year: 2022,
+            heightCm: 165,
+            weightKg: 75,
+            diseaseCodes: ['E11'],
+            notes: 'Diabetes em remissão parcial'
+          },
+          {
+            year: 2023,
+            heightCm: 165,
+            weightKg: 68,
+            diseaseCodes: [],
+            notes: 'Todas as condições em remissão!'
+          },
+          {
+            year: 2024,
+            heightCm: 165,
+            weightKg: 65,
+            diseaseCodes: [],
+            notes: 'Peso ideal mantido - saudável'
+          }
+        ]
+      }
+    }
+  });
+
+  // Patient 4: Carlos Moderado - Caso intermediário típico
+  const carlos = await prisma.patient.create({
+    data: {
+      name: 'Carlos Moderado',
+      sex: 'M',
+      birthYear: 1975,
       records: {
         create: [
           {
             year: 2019,
             heightCm: 175,
-            weightKg: 72,
+            weightKg: 78,
             diseaseCodes: [],
-            notes: 'Check-up anual - saudável'
+            notes: 'Leve sobrepeso'
           },
           {
             year: 2020,
             heightCm: 175,
-            weightKg: 74,
+            weightKg: 82,
             diseaseCodes: [],
-            notes: 'Leve ganho de peso durante pandemia'
+            notes: 'Ganho de peso na pandemia'
           },
           {
             year: 2021,
             heightCm: 175,
-            weightKg: 77,
+            weightKg: 86,
             diseaseCodes: [],
             notes: 'Pré-diabetes identificado'
           },
           {
             year: 2022,
             heightCm: 175,
-            weightKg: 80,
-            diseaseCodes: [],
-            notes: 'Orientação dietética iniciada'
+            weightKg: 88,
+            diseaseCodes: ['E11'],
+            notes: 'Diabetes Tipo 2 confirmado'
           },
           {
             year: 2023,
             heightCm: 175,
-            weightKg: 83,
-            diseaseCodes: ['E11'],
-            notes: 'Diagnóstico de Diabetes Tipo 2'
-          },
-          {
-            year: 2024,
-            heightCm: 175,
-            weightKg: 86,
+            weightKg: 91,
             diseaseCodes: ['E11'],
             notes: 'Tratamento com metformina'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 2: Maria Santos - Hipertensão + Doença Cardíaca
-  const maria = await prisma.patient.create({
-    data: {
-      name: 'Maria Santos',
-      sex: 'F',
-      birthYear: 1968,
-      records: {
-        create: [
-          {
-            year: 2019,
-            heightCm: 162,
-            weightKg: 65,
-            diseaseCodes: [],
-            notes: 'Saudável, pressão normal'
-          },
-          {
-            year: 2020,
-            heightCm: 162,
-            weightKg: 68,
-            diseaseCodes: [],
-            notes: 'Pressão limítrofe 135/85'
-          },
-          {
-            year: 2021,
-            heightCm: 162,
-            weightKg: 70,
-            diseaseCodes: ['I10'],
-            notes: 'Diagnóstico de hipertensão'
-          },
-          {
-            year: 2022,
-            heightCm: 162,
-            weightKg: 73,
-            diseaseCodes: ['I10'],
-            notes: 'Tratamento com anti-hipertensivo'
-          },
-          {
-            year: 2023,
-            heightCm: 162,
-            weightKg: 76,
-            diseaseCodes: ['I10'],
-            notes: 'Ecocardiograma com alterações leves'
           },
           {
             year: 2024,
-            heightCm: 162,
-            weightKg: 79,
-            diseaseCodes: ['I10', 'I25'],
-            notes: 'Doença cardíaca isquêmica diagnosticada'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 3: Carlos Oliveira - Múltiplas condições
-  const carlos = await prisma.patient.create({
-    data: {
-      name: 'Carlos Oliveira',
-      sex: 'M',
-      birthYear: 1964,
-      records: {
-        create: [
-          {
-            year: 2019,
-            heightCm: 170,
-            weightKg: 82,
-            diseaseCodes: ['E11'],
-            notes: 'Diabetes pré-existente, controlado'
-          },
-          {
-            year: 2020,
-            heightCm: 170,
-            weightKg: 85,
-            diseaseCodes: ['E11'],
-            notes: 'Ganho de peso, glicemia elevada'
-          },
-          {
-            year: 2021,
-            heightCm: 170,
-            weightKg: 88,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Hipertensão diagnosticada'
-          },
-          {
-            year: 2022,
-            heightCm: 170,
-            weightKg: 91,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Dificuldade no controle glicemico'
-          },
-          {
-            year: 2023,
-            heightCm: 170,
+            heightCm: 175,
             weightKg: 94,
             diseaseCodes: ['E11', 'I10'],
-            notes: 'Iniciado insulina'
-          },
-          {
-            year: 2024,
-            heightCm: 170,
-            weightKg: 98,
-            diseaseCodes: ['E11', 'I10', 'I25'],
-            notes: 'Doença cardíaca - stent colocado'
+            notes: 'Hipertensão desenvolvida'
           }
         ]
       }
     }
   });
 
-  console.log('Seeded patients:', { joao: joao.id, maria: maria.id, carlos: carlos.id });
+  // Patient 5: Lucia Cardíaca - Foco em doença cardíaca
+  const lucia = await prisma.patient.create({
+    data: {
+      name: 'Lucia Cardíaca',
+      sex: 'F',
+      birthYear: 1960,
+      records: {
+        create: [
+          {
+            year: 2021,
+            heightCm: 160,
+            weightKg: 72,
+            diseaseCodes: ['I10'],
+            notes: 'Hipertensão há 10 anos'
+          },
+          {
+            year: 2022,
+            heightCm: 160,
+            weightKg: 74,
+            diseaseCodes: ['I10'],
+            notes: 'ECG com alterações leves'
+          },
+          {
+            year: 2023,
+            heightCm: 160,
+            weightKg: 76,
+            diseaseCodes: ['I10', 'I25'],
+            notes: 'Infarto - 2 stents colocados'
+          },
+          {
+            year: 2024,
+            heightCm: 160,
+            weightKg: 78,
+            diseaseCodes: ['I10', 'I25'],
+            notes: 'Reabilitação cardíaca em andamento'
+          }
+        ]
+      }
+    }
+  });
+
+  console.log('Seeded patients:', { 
+    pedro: pedro.id, 
+    roberto: roberto.id, 
+    ana: ana.id, 
+    carlos: carlos.id,
+    lucia: lucia.id
+  });
 }
 
 main()

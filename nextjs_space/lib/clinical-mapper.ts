@@ -19,8 +19,8 @@ export interface MorphTargets {
 }
 
 export class ClinicalToBodyMapper {
-  private static readonly BMI_MIN = 15;
-  private static readonly BMI_MAX = 40;
+  private static readonly BMI_MIN = 18;  // IMC mínimo saudável
+  private static readonly BMI_MAX = 45;  // IMC de obesidade mórbida
 
   // Calculate BMI and normalize to 0-1 scale
   private static calculateNormalizedBMI(heightCm: number, weightKg: number): number {
@@ -39,35 +39,36 @@ export class ClinicalToBodyMapper {
   static calculate(input: PatientInput): MorphTargets {
     const normalizedBMI = this.calculateNormalizedBMI(input.heightCm, input.weightKg);
     
-    // Base modifiers from BMI - valores mais sutis (max ~0.3)
-    let weightModifier = normalizedBMI * 0.4;
-    let abdomenModifier = normalizedBMI * 0.35;
-    let muscleModifier = 0.3; // Baseline muscle mass
-    let postureModifier = Math.min(0.25, (input.age - 30) / 160); // Age-based posture (mais sutil)
+    // Base modifiers from BMI - valores aumentados para variação visível
+    // normalizedBMI vai de 0 (IMC 18) a 1 (IMC 45)
+    let weightModifier = normalizedBMI * 0.7;  // Max 0.7 só do IMC
+    let abdomenModifier = normalizedBMI * 0.8; // Abdômen responde mais ao peso
+    let muscleModifier = 0.4 - (normalizedBMI * 0.2); // Menos músculo com mais peso
+    let postureModifier = Math.min(0.4, (input.age - 25) / 100); // Age-based posture
     
-    // Disease-specific effects - valores reduzidos para visualização realista
+    // Disease-specific effects - valores aumentados para serem visíveis
     let diabetesEffect = 0;
     let heartDiseaseEffect = 0;
     let hypertensionEffect = 0;
 
-    // Apply disease modifiers per clinical mapping rules (valores mais sutis)
+    // Apply disease modifiers per clinical mapping rules
     for (const code of input.diseaseCodes) {
       switch (code) {
-        case 'E11': // Diabetes Type 2
-          weightModifier += 0.05;
-          abdomenModifier += 0.08;
-          diabetesEffect = 0.3; // Reduzido de 1.0 para 0.3
+        case 'E11': // Diabetes Type 2 - acúmulo abdominal característico
+          weightModifier += 0.08;
+          abdomenModifier += 0.15;  // Diabetes causa mais gordura visceral
+          diabetesEffect = 0.5;
           break;
-        case 'I10': // Hypertension
-          weightModifier += 0.03;
-          abdomenModifier += 0.04;
-          muscleModifier -= 0.02;
-          hypertensionEffect = 0.2; // Reduzido de 1.0 para 0.2
-          break;
-        case 'I25': // Heart Disease
+        case 'I10': // Hypertension - edema leve
           weightModifier += 0.05;
-          postureModifier += 0.1;
-          heartDiseaseEffect = 0.25; // Reduzido de 1.0 para 0.25
+          abdomenModifier += 0.06;
+          muscleModifier -= 0.05;
+          hypertensionEffect = 0.4;
+          break;
+        case 'I25': // Heart Disease - postura afetada
+          weightModifier += 0.06;
+          postureModifier += 0.15;  // Postura mais curvada
+          heartDiseaseEffect = 0.5;
           break;
       }
     }
