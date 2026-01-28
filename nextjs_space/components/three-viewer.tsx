@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useState } from 'react';
+import { Suspense, useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -13,11 +13,16 @@ interface AvatarProps {
 
 function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
   const gltf = useGLTF('/models/avatar_morphable.glb');
-  const meshRef = useRef<THREE.Mesh | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const meshRef = useRef<THREE.SkinnedMesh | THREE.Mesh | null>(null);
+  const morphTargetsRef = useRef<MorphTargets>(morphTargets);
+
+  // Atualizar ref quando morphTargets mudar
+  useEffect(() => {
+    morphTargetsRef.current = morphTargets;
+  }, [morphTargets]);
 
   // Mapeamento fixo de nomes para índices
-  const morphIndexMap: Record<string, number> = {
+  const morphIndexMap: Record<string, number> = useMemo(() => ({
     'Weight': 0,
     'AbdomenGirth': 1,
     'MuscleMass': 2,
@@ -25,14 +30,20 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
     'DiabetesEffect': 4,
     'HypertensionEffect': 5,
     'HeartDiseaseEffect': 6,
-  };
+  }), []);
 
-  useEffect(() => {
-    if (!gltf.scene) return;
+  // Clonar a cena para evitar compartilhamento entre instâncias
+  const clonedScene = useMemo(() => {
+    const clone = gltf.scene.clone(true);
     
-    gltf.scene.traverse((child) => {
+    clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        
+        // Clonar geometria para ter morph targets independentes
+        if (mesh.geometry) {
+          mesh.geometry = mesh.geometry.clone();
+        }
         
         // Configurar material
         mesh.material = new THREE.MeshStandardMaterial({
@@ -49,32 +60,35 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
         // Guardar referência do mesh com morph targets
         if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
           meshRef.current = mesh;
-          setIsReady(true);
         }
       }
     });
+    
+    return clone;
   }, [gltf.scene]);
 
   // Aplicar morph targets a cada frame
   useFrame(() => {
     const mesh = meshRef.current;
-    if (!mesh?.morphTargetInfluences || !morphTargets) return;
+    if (!mesh?.morphTargetInfluences) return;
 
     const influences = mesh.morphTargetInfluences;
-    const lerpFactor = 0.12;
+    const currentMorphTargets = morphTargetsRef.current;
+    const lerpFactor = 0.15;
 
-    Object.entries(morphTargets).forEach(([key, value]) => {
+    Object.entries(currentMorphTargets).forEach(([key, value]) => {
       const index = morphIndexMap[key];
       if (index !== undefined && index < influences.length) {
         const targetValue = typeof value === 'number' ? value : 0;
-        influences[index] += (targetValue - influences[index]) * lerpFactor;
+        const currentValue = influences[index];
+        influences[index] = currentValue + (targetValue - currentValue) * lerpFactor;
       }
     });
   });
 
   return (
     <group position={position}>
-      <primitive object={gltf.scene} scale={1.0} />
+      <primitive object={clonedScene} scale={1.0} />
     </group>
   );
 }
