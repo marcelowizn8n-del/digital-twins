@@ -2,7 +2,6 @@
   "morphTargets": {
     "Weight": {
       "index": 0,
-      "description": "Aumento geral de massa corporal",
       "range": [
         0.0,
         1.0
@@ -10,7 +9,6 @@
     },
     "AbdomenGirth": {
       "index": 1,
-      "description": "Circunferência abdominal (barriga)",
       "range": [
         0.0,
         1.0
@@ -18,7 +16,6 @@
     },
     "MuscleMass": {
       "index": 2,
-      "description": "Massa muscular (braços, pernas, peito)",
       "range": [
         0.0,
         1.0
@@ -26,7 +23,6 @@
     },
     "Posture": {
       "index": 3,
-      "description": "Postura/curvatura da coluna",
       "range": [
         0.0,
         1.0
@@ -34,7 +30,6 @@
     },
     "DiabetesEffect": {
       "index": 4,
-      "description": "Efeito composto do Diabetes Tipo 2",
       "range": [
         0.0,
         1.0
@@ -42,7 +37,6 @@
     },
     "HypertensionEffect": {
       "index": 5,
-      "description": "Efeito composto da Hipertensão",
       "range": [
         0.0,
         1.0
@@ -50,14 +44,14 @@
     },
     "HeartDiseaseEffect": {
       "index": 6,
-      "description": "Efeito composto de Doença Cardíaca",
       "range": [
         0.0,
         1.0
       ]
     }
   },
-  "vertexCount": 7494,
-  "faceCount": 14976,
-  "height": 1.75
+  "vertexCount": 2822,
+  "faceCount": 5616,
+  "height": 1.3646090030670166,
+  "source": "Blender 3.4.1"
 }

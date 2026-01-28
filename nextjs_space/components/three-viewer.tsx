@@ -77,8 +77,8 @@ function StudioLighting() {
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 0.9, 2.5);
-    camera.lookAt(0, 0.85, 0);
+    camera.position.set(0, 0.7, 2.2);
+    camera.lookAt(0, 0.68, 0);
   }, [camera]);
   return null;
 }
@@ -89,7 +89,7 @@ interface ThreeViewerProps {
 
 function Floor() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[10, 10]} />
       <meshStandardMaterial color="#a8a8a8" roughness={0.9} metalness={0} />
     </mesh>
@@ -113,7 +113,7 @@ export default function ThreeViewer({ morphTargets }: ThreeViewerProps) {
           enableZoom={true}
           minDistance={1.0}
           maxDistance={6}
-          target={[0, 0.85, 0]}
+          target={[0, 0.68, 0]}
           maxPolarAngle={Math.PI * 0.85}
           minPolarAngle={Math.PI * 0.15}
         />
