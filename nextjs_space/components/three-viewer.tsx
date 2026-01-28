@@ -38,16 +38,32 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
     });
   }, [clonedScene]);
 
+  // Mapeamento fixo de nomes para índices (conforme ordem no GLB)
+  const morphIndexMap: Record<string, number> = {
+    'Weight': 0,
+    'AbdomenGirth': 1,
+    'MuscleMass': 2,
+    'Posture': 3,
+    'DiabetesEffect': 4,
+    'HypertensionEffect': 5,
+    'HeartDiseaseEffect': 6,
+  };
+
   useFrame(() => {
     const currentMesh = meshRef.current;
-    if (!currentMesh?.morphTargetDictionary || !currentMesh?.morphTargetInfluences) return;
+    if (!currentMesh?.morphTargetInfluences) return;
 
-    const dict = currentMesh.morphTargetDictionary;
     const influences = currentMesh.morphTargetInfluences;
-    const lerpFactor = 0.08;
+    const lerpFactor = 0.1; // Mais rápido para feedback visual
 
     Object.entries(morphTargets ?? {}).forEach(([key, value]) => {
-      const index = dict[key];
+      // Tentar primeiro pelo dictionary do modelo, depois pelo mapa fixo
+      const dict = currentMesh.morphTargetDictionary;
+      let index = dict?.[key];
+      if (index === undefined) {
+        index = morphIndexMap[key];
+      }
+      
       if (index !== undefined && influences[index] !== undefined) {
         influences[index] += ((value ?? 0) - influences[index]) * lerpFactor;
       }
