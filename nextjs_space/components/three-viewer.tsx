@@ -1,53 +1,58 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useMemo } from 'react';
+import { Suspense, useRef, useEffect, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF } from '@react-three/drei';
+import { OrbitControls, useGLTF, Clone } from '@react-three/drei';
 import * as THREE from 'three';
+import { SkeletonUtils } from 'three-stdlib';
 import { MorphTargets } from '@/lib/clinical-mapper';
+
+// Preload both models
+useGLTF.preload('/models/avatar_morphable.glb');
+useGLTF.preload('/models/avatar_female.glb');
 
 interface AvatarProps {
   morphTargets: MorphTargets;
+  sex: 'M' | 'F';
   position?: [number, number, number];
 }
 
-function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
-  const gltf = useGLTF('/models/avatar_morphable.glb');
-  const meshRef = useRef<THREE.SkinnedMesh | THREE.Mesh | null>(null);
-  const morphTargetsRef = useRef<MorphTargets>(morphTargets);
+// Mapeamento fixo de nomes para índices
+const MORPH_INDEX_MAP: Record<string, number> = {
+  'Weight': 0,
+  'AbdomenGirth': 1,
+  'MuscleMass': 2,
+  'Posture': 3,
+  'DiabetesEffect': 4,
+  'HypertensionEffect': 5,
+  'HeartDiseaseEffect': 6,
+};
 
+function Avatar({ morphTargets, sex, position = [0, 0, 0] }: AvatarProps) {
+  const modelPath = sex === 'F' ? '/models/avatar_female.glb' : '/models/avatar_morphable.glb';
+  const gltf = useGLTF(modelPath);
+  const meshRef = useRef<THREE.Mesh | null>(null);
+  const targetValuesRef = useRef<MorphTargets>(morphTargets);
+  
   // Atualizar ref quando morphTargets mudar
   useEffect(() => {
-    morphTargetsRef.current = morphTargets;
+    targetValuesRef.current = morphTargets;
   }, [morphTargets]);
 
-  // Mapeamento fixo de nomes para índices
-  const morphIndexMap: Record<string, number> = useMemo(() => ({
-    'Weight': 0,
-    'AbdomenGirth': 1,
-    'MuscleMass': 2,
-    'Posture': 3,
-    'DiabetesEffect': 4,
-    'HypertensionEffect': 5,
-    'HeartDiseaseEffect': 6,
-  }), []);
-
-  // Clonar a cena para evitar compartilhamento entre instâncias
+  // CRÍTICO: Clonar a cena para ter uma instância independente
+  // Isso evita que mudanças afetem outras instâncias devido ao cache do useGLTF
   const clonedScene = useMemo(() => {
-    const clone = gltf.scene.clone(true);
+    // Usar SkeletonUtils.clone para preservar morph targets
+    const clone = SkeletonUtils.clone(gltf.scene);
     
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         
-        // Clonar geometria para ter morph targets independentes
-        if (mesh.geometry) {
-          mesh.geometry = mesh.geometry.clone();
-        }
-        
         // Configurar material
+        const skinColor = sex === 'F' ? 0xeee0db : 0xe8e4e0;
         mesh.material = new THREE.MeshStandardMaterial({
-          color: 0xe8e4e0,
+          color: skinColor,
           roughness: 0.4,
           metalness: 0.0,
           flatShading: false,
@@ -56,39 +61,46 @@ function Avatar({ morphTargets, position = [0, 0, 0] }: AvatarProps) {
         });
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        
-        // Guardar referência do mesh com morph targets
+
+        // Verificar se tem morph targets
         if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
+          // Criar um novo array para morphTargetInfluences (independente do original)
+          const numTargets = mesh.morphTargetInfluences.length;
+          mesh.morphTargetInfluences = Array(numTargets).fill(0);
           meshRef.current = mesh;
+          console.log(`[Avatar] Modelo ${sex} clonado com ${numTargets} morph targets`);
         }
       }
     });
     
     return clone;
-  }, [gltf.scene]);
+  }, [gltf.scene, sex]);
 
-  // Aplicar morph targets a cada frame
+  // Aplicar morph targets a cada frame com interpolação suave
   useFrame(() => {
     const mesh = meshRef.current;
     if (!mesh?.morphTargetInfluences) return;
 
     const influences = mesh.morphTargetInfluences;
-    const currentMorphTargets = morphTargetsRef.current;
-    const lerpFactor = 0.15;
+    const targets = targetValuesRef.current;
+    const lerpFactor = 0.1;
 
-    Object.entries(currentMorphTargets).forEach(([key, value]) => {
-      const index = morphIndexMap[key];
+    Object.entries(targets).forEach(([key, value]) => {
+      const index = MORPH_INDEX_MAP[key];
       if (index !== undefined && index < influences.length) {
-        const targetValue = typeof value === 'number' ? value : 0;
+        const targetValue = typeof value === 'number' ? Math.max(0, Math.min(1, value)) : 0;
         const currentValue = influences[index];
         influences[index] = currentValue + (targetValue - currentValue) * lerpFactor;
       }
     });
   });
 
+  // Ajustar escala para modelo feminino (mais baixo)
+  const scale = sex === 'F' ? 1.08 : 1.0;
+
   return (
     <group position={position}>
-      <primitive object={clonedScene} scale={1.0} />
+      <primitive object={clonedScene} scale={scale} />
     </group>
   );
 }
@@ -125,6 +137,7 @@ function CameraSetup() {
 
 interface ThreeViewerProps {
   morphTargets: MorphTargets;
+  sex: 'M' | 'F';
 }
 
 function Floor() {
@@ -145,7 +158,10 @@ function BackWall() {
   );
 }
 
-export default function ThreeViewer({ morphTargets }: ThreeViewerProps) {
+export default function ThreeViewer({ morphTargets, sex }: ThreeViewerProps) {
+  // Usar key para forçar re-render quando sexo mudar
+  const avatarKey = `avatar-${sex}`;
+  
   return (
     <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-gray-300 to-gray-400 rounded-lg overflow-hidden">
       <Canvas 
@@ -162,7 +178,7 @@ export default function ThreeViewer({ morphTargets }: ThreeViewerProps) {
         <CameraSetup />
         <StudioLighting />
         <Suspense fallback={null}>
-          <Avatar morphTargets={morphTargets} />
+          <Avatar key={avatarKey} morphTargets={morphTargets} sex={sex} />
           <Floor />
           <BackWall />
         </Suspense>

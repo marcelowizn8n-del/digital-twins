@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ViewerLoaderProps {
   morphTargets: MorphTargets;
+  sex: 'M' | 'F';
 }
 
 function LoadingPlaceholder() {
@@ -24,6 +25,6 @@ const ThreeViewer = dynamic(() => import('./three-viewer'), {
   loading: () => <LoadingPlaceholder />,
 });
 
-export default function ViewerLoader({ morphTargets }: ViewerLoaderProps) {
-  return <ThreeViewer morphTargets={morphTargets} />;
+export default function ViewerLoader({ morphTargets, sex }: ViewerLoaderProps) {
+  return <ThreeViewer morphTargets={morphTargets} sex={sex} />;
 }

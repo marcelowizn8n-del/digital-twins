@@ -26,7 +26,7 @@ interface ClinicalRecord {
 interface Patient {
   id: string;
   name: string;
-  sex: string;
+  sex: 'M' | 'F';
   birthYear: number;
   records: ClinicalRecord[];
 }
@@ -529,7 +529,7 @@ export default function DigitalTwinsApp() {
 
         {/* Coluna central - Visualizador 3D */}
         <div className="lg:col-span-1 h-[500px] lg:h-[600px]">
-          <ViewerLoader morphTargets={finalMorphTargets} />
+          <ViewerLoader morphTargets={finalMorphTargets} sex={selectedPatient?.sex || 'M'} />
         </div>
 
         {/* Coluna direita - Histórico e Tecnologia */}
