@@ -11,9 +11,14 @@ import { MorphTargets } from '@/lib/clinical-mapper';
 useGLTF.preload('/models/avatar_morphable.glb');
 useGLTF.preload('/models/avatar_female.glb');
 
+// Alturas dos modelos 3D em cm
+const MODEL_HEIGHT_MALE = 173.2;
+const MODEL_HEIGHT_FEMALE = 171.2;
+
 interface AvatarProps {
   morphTargets: MorphTargets;
   sex: 'M' | 'F';
+  heightCm: number; // Altura do paciente em cm
   position?: [number, number, number];
 }
 
@@ -28,7 +33,7 @@ const MORPH_INDEX_MAP: Record<string, number> = {
   'HeartDiseaseEffect': 6,
 };
 
-function Avatar({ morphTargets, sex, position = [0, 0, 0] }: AvatarProps) {
+function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarProps) {
   const modelPath = sex === 'F' ? '/models/avatar_female.glb' : '/models/avatar_morphable.glb';
   const gltf = useGLTF(modelPath);
   const meshRef = useRef<THREE.Mesh | null>(null);
@@ -38,6 +43,10 @@ function Avatar({ morphTargets, sex, position = [0, 0, 0] }: AvatarProps) {
   useEffect(() => {
     targetValuesRef.current = morphTargets;
   }, [morphTargets]);
+
+  // Calcular escala baseada na altura do paciente
+  const modelHeight = sex === 'F' ? MODEL_HEIGHT_FEMALE : MODEL_HEIGHT_MALE;
+  const scale = heightCm / modelHeight;
 
   // CRÍTICO: Clonar a cena para ter uma instância independente
   // Isso evita que mudanças afetem outras instâncias devido ao cache do useGLTF
@@ -95,9 +104,6 @@ function Avatar({ morphTargets, sex, position = [0, 0, 0] }: AvatarProps) {
     });
   });
 
-  // Ajustar escala para modelo feminino (mais baixo)
-  const scale = sex === 'F' ? 1.08 : 1.0;
-
   return (
     <group position={position}>
       <primitive object={clonedScene} scale={scale} />
@@ -138,6 +144,7 @@ function CameraSetup() {
 interface ThreeViewerProps {
   morphTargets: MorphTargets;
   sex: 'M' | 'F';
+  heightCm: number; // Altura do paciente em cm
 }
 
 function Floor() {
@@ -158,9 +165,12 @@ function BackWall() {
   );
 }
 
-export default function ThreeViewer({ morphTargets, sex }: ThreeViewerProps) {
-  // Usar key para forçar re-render quando sexo mudar
-  const avatarKey = `avatar-${sex}`;
+export default function ThreeViewer({ morphTargets, sex, heightCm }: ThreeViewerProps) {
+  // Usar key para forçar re-render quando sexo ou altura mudar
+  const avatarKey = `avatar-${sex}-${heightCm}`;
+  
+  // Ajustar câmera target baseado na altura do paciente
+  const cameraTargetY = (heightCm / 100) * 0.5; // Metade da altura em metros
   
   return (
     <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-gray-300 to-gray-400 rounded-lg overflow-hidden">
@@ -178,7 +188,7 @@ export default function ThreeViewer({ morphTargets, sex }: ThreeViewerProps) {
         <CameraSetup />
         <StudioLighting />
         <Suspense fallback={null}>
-          <Avatar key={avatarKey} morphTargets={morphTargets} sex={sex} />
+          <Avatar key={avatarKey} morphTargets={morphTargets} sex={sex} heightCm={heightCm} />
           <Floor />
           <BackWall />
         </Suspense>
@@ -187,7 +197,7 @@ export default function ThreeViewer({ morphTargets, sex }: ThreeViewerProps) {
           enableZoom={true}
           minDistance={1.5}
           maxDistance={8}
-          target={[0, 0.85, 0]}
+          target={[0, cameraTargetY, 0]}
           maxPolarAngle={Math.PI * 0.85}
           minPolarAngle={Math.PI * 0.1}
         />

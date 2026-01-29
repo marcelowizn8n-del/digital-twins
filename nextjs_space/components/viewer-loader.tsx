@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 interface ViewerLoaderProps {
   morphTargets: MorphTargets;
   sex: 'M' | 'F';
+  heightCm: number; // Altura do paciente em cm
 }
 
 function LoadingPlaceholder() {
@@ -25,6 +26,6 @@ const ThreeViewer = dynamic(() => import('./three-viewer'), {
   loading: () => <LoadingPlaceholder />,
 });
 
-export default function ViewerLoader({ morphTargets, sex }: ViewerLoaderProps) {
-  return <ThreeViewer morphTargets={morphTargets} sex={sex} />;
+export default function ViewerLoader({ morphTargets, sex, heightCm }: ViewerLoaderProps) {
+  return <ThreeViewer morphTargets={morphTargets} sex={sex} heightCm={heightCm} />;
 }

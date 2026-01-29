@@ -529,7 +529,11 @@ export default function DigitalTwinsApp() {
 
         {/* Coluna central - Visualizador 3D */}
         <div className="lg:col-span-1 h-[500px] lg:h-[600px]">
-          <ViewerLoader morphTargets={finalMorphTargets} sex={selectedPatient?.sex || 'M'} />
+          <ViewerLoader 
+            morphTargets={finalMorphTargets} 
+            sex={selectedPatient?.sex || 'M'} 
+            heightCm={currentRecordData?.heightCm || 170}
+          />
         </div>
 
         {/* Coluna direita - Histórico e Tecnologia */}
