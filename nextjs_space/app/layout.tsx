@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: 'Digital Twins - Hospital Albert Einstein',
   description: 'Sistema de visualização 3D de gêmeos digitais para acompanhamento clínico de pacientes',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
   },
   openGraph: {
     title: 'Digital Twins - Hospital Albert Einstein',
