@@ -6,13 +6,13 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-3">
               <Image 
-                src="/logo.jpeg" 
+                src="/logo.png" 
                 alt="Digital Twin Logo" 
-                width={120} 
-                height={48}
+                width={180} 
+                height={72}
                 className="object-contain"
                 priority
               />
