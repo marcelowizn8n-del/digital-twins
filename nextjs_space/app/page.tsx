@@ -1,4 +1,4 @@
-import { Activity } from 'lucide-react';
+import Image from 'next/image';
 import DigitalTwinsApp from '@/components/digital-twins-app';
 
 export default function Home() {
@@ -8,13 +8,14 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg">
-                <Activity className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">Digital Twins</h1>
-                <p className="text-xs text-slate-500">Hospital Albert Einstein</p>
-              </div>
+              <Image 
+                src="/logo.jpeg" 
+                alt="Digital Twin Logo" 
+                width={120} 
+                height={48}
+                className="object-contain"
+                priority
+              />
             </div>
             <span className="text-sm text-slate-500 hidden sm:block">
               Sistema de Visualização 3D de Pacientes

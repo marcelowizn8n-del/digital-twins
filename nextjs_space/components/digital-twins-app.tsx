@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import PatientSelector from './patient-selector';
 import TimelineSlider from './timeline-slider';
 import ViewerLoader from './viewer-loader';
@@ -218,18 +217,6 @@ export default function DigitalTwinsApp() {
 
   return (
     <div className="space-y-6">
-      {/* Header com logo */}
-      <div className="flex items-center justify-center gap-4 py-4">
-        <Image 
-          src="/logo.jpeg" 
-          alt="Digital Twin Logo" 
-          width={180} 
-          height={120}
-          className="object-contain"
-          priority
-        />
-      </div>
-
       {/* Header com seleção de paciente */}
       <Card>
         <CardContent className="py-4">
