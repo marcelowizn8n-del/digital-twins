@@ -36,6 +36,7 @@ interface WhatIfSimulatorProps {
   currentWeight: number;
   currentActivityLevel?: string;
   onSimulationComplete?: (result: SimulationResult) => void;
+  onWeightChange?: (weightLossKg: number) => void; // Callback para atualizar modelo 3D
 }
 
 export default function WhatIfSimulator({
@@ -44,13 +45,22 @@ export default function WhatIfSimulator({
   currentWeight,
   currentActivityLevel = 'moderate',
   onSimulationComplete,
+  onWeightChange,
 }: WhatIfSimulatorProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SimulationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   // Intervenções
-  const [weightLoss, setWeightLoss] = useState(0);
+  const [weightLoss, setWeightLossState] = useState(0);
+  
+  // Wrapper para atualizar estado e notificar modelo 3D
+  const setWeightLoss = (value: number) => {
+    setWeightLossState(value);
+    if (onWeightChange) {
+      onWeightChange(value);
+    }
+  };
   const [activityLevel, setActivityLevel] = useState<string>(currentActivityLevel);
   const [startStatin, setStartStatin] = useState(false);
   const [startMetformin, setStartMetformin] = useState(false);
