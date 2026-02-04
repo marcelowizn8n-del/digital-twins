@@ -1,0 +1,31 @@
+
+
+===== TS errors =====
+
+[Test Mode] ./components/metabolic-risk-panel.tsx:131:15
+Type error: Type 'string' is not assignable to type 'never'.
+
+[0m [90m 129 |[39m [32m    }`[39m}[33m>[39m[0m
+[0m [90m 130 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex items-center gap-1.5 mb-1"[39m[33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 131 |[39m         [33m<[39m[33mIcon[39m className[33m=[39m{[32m`w-3.5 h-3.5 ${isAltered ? 'text-red-600' : 'text-green-600'}`[39m} [33m/[39m[33m>[39m[0m
+[0m [90m     |[39m               [31m[1m^[22m[39m[0m
+[0m [90m 132 |[39m         [33m<[39m[33mspan[39m className[33m=[39m[32m"text-xs font-medium"[39m[33m>[39m{label}[33m<[39m[33m/[39m[33mspan[39m[33m>[39m[0m
+[0m [90m 133 |[39m         {isAltered [33m&&[39m [33m<[39m[33mspan[39m className[33m=[39m[32m"text-red-500"[39m[33m>[39m⚠[33m<[39m[33m/[39m[33mspan[39m[33m>[39m}[0m
+[0m [90m 134 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+
+===== TS errors =====
+
+
+Failed to compile.
+
+./components/metabolic-risk-panel.tsx:131:15
+Type error: Type 'string' is not assignable to type 'never'.
+
+[0m [90m 129 |[39m [32m    }`[39m}[33m>[39m[0m
+[0m [90m 130 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"flex items-center gap-1.5 mb-1"[39m[33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 131 |[39m         [33m<[39m[33mIcon[39m className[33m=[39m{[32m`w-3.5 h-3.5 ${isAltered ? 'text-red-600' : 'text-green-600'}`[39m} [33m/[39m[33m>[39m[0m
+[0m [90m     |[39m               [31m[1m^[22m[39m[0m
+[0m [90m 132 |[39m         [33m<[39m[33mspan[39m className[33m=[39m[32m"text-xs font-medium"[39m[33m>[39m{label}[33m<[39m[33m/[39m[33mspan[39m[33m>[39m[0m
+[0m [90m 133 |[39m         {isAltered [33m&&[39m [33m<[39m[33mspan[39m className[33m=[39m[32m"text-red-500"[39m[33m>[39m⚠[33m<[39m[33m/[39m[33mspan[39m[33m>[39m}[0m
+[0m [90m 134 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null

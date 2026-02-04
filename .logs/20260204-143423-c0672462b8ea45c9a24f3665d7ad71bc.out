@@ -1,0 +1,7 @@
+[master c17fa61] What-If simulator e Dashboard Performance
+ 6 files changed, 1460 insertions(+), 16 deletions(-)
+ create mode 100644 nextjs_space/app/api/simulate-intervention/route.ts
+ create mode 100644 nextjs_space/app/dashboard/page.tsx
+ create mode 100644 nextjs_space/components/metabolic-heatmap-overlay.tsx
+ create mode 100644 nextjs_space/components/what-if-simulator.tsx
+###c17fa61827322d26f3c58781fa964793bc86ade9###

@@ -1,0 +1,9 @@
+ ⨯ TypeError: Cannot read properties of undefined (reading 'S')
+    at Tt.exports (/home/ubuntu/digital_twins/nextjs_space/.next/server/vendor-chunks/@react-three.js:13416:512)
+    at createReconciler (/home/ubuntu/digital_twins/nextjs_space/.next/server/vendor-chunks/@react-three.js:14603:24)
+    at __webpack_require__ (/home/ubuntu/digital_twins/nextjs_space/.next/server/webpack-runtime.js:25:42)
+    at (ssr)/./components/viewer-wrapper.tsx (/home/ubuntu/digital_twins/nextjs_space/.next/server/app/page.js:1160:76)
+    at __webpack_require__ (/home/ubuntu/digital_twins/nextjs_space/.next/server/webpack-runtime.js:25:42)
+    at (ssr)/./components/digital-twins-app.tsx (/home/ubuntu/digital_twins/nextjs_space/.next/server/app/page.js:194:73)
+    at Object.__webpack_require__ [as require] (/home/ubuntu/digital_twins/nextjs_space/.next/server/webpack-runtime.js:25:42)
+digest: "1253835992"

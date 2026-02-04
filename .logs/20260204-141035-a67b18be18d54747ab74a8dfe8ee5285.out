@@ -1,0 +1,15 @@
+[master 8eca361] Fase 1 MVP - Risco Metabólico
+ 17 files changed, 12419 insertions(+), 242 deletions(-)
+ create mode 100644 ml_data/X_test.npy
+ create mode 100644 ml_data/X_train.npy
+ create mode 100644 ml_data/X_val.npy
+ create mode 100644 ml_data/feature_names.json
+ create mode 100644 ml_data/full_synthetic_dataset.csv
+ create mode 100644 ml_data/y_test.npy
+ create mode 100644 ml_data/y_train.npy
+ create mode 100644 ml_data/y_val.npy
+ create mode 100644 nextjs_space/app/api/predict-metabolic-risk/route.ts
+ create mode 100644 nextjs_space/components/metabolic-risk-panel.tsx
+ create mode 100644 nextjs_space/scripts/generate_synthetic_data.py
+ create mode 100644 nextjs_space/scripts/synthetic_patients.ts
+###8eca36110697e55cda596dc0b1a18a8018a2b0da###

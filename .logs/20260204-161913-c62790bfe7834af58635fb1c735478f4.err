@@ -1,0 +1,33 @@
+Terminated
+ ⨯ ./components/three-viewer.tsx
+Module not found: Can't resolve '@react-three/fiber'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./components/viewer-loader.tsx
+./components/digital-twins-app.tsx
+ ⨯ ./components/three-viewer.tsx
+Module not found: Can't resolve '@react-three/fiber'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./components/viewer-loader.tsx
+./components/digital-twins-app.tsx
+ ⨯ ./components/three-viewer.tsx
+Module not found: Can't resolve '@react-three/fiber'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./components/viewer-loader.tsx
+./components/digital-twins-app.tsx
+ ⨯ ./components/three-viewer.tsx
+Module not found: Can't resolve '@react-three/fiber'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./components/viewer-loader.tsx
+./components/digital-twins-app.tsx

@@ -1,0 +1,69 @@
+  ▲ Next.js 14.2.28
+  - Local:        http://localhost:3000
+  - Environments: .env
+  - Experiments (use with caution):
+    · outputFileTracingRoot
+
+ ✓ Starting...
+ ✓ Ready in 1415ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.4s (1742 modules)
+ GET / 200 in 2671ms
+ ✓ Compiled in 400ms (875 modules)
+ GET / 200 in 38ms
+ GET / 200 in 26ms
+ GET / 200 in 44ms
+ ✓ Compiled /api/patients in 226ms (900 modules)
+ GET /api/patients 200 in 430ms
+ GET /api/patients 200 in 22ms
+ GET / 200 in 65ms
+ GET / 200 in 28ms
+ GET / 200 in 29ms
+ GET / 200 in 31ms
+ GET / 200 in 25ms
+ GET / 200 in 26ms
+ GET / 200 in 30ms
+ GET / 200 in 30ms
+ GET / 200 in 86ms
+ GET / 200 in 29ms
+ GET / 200 in 26ms
+ GET / 200 in 29ms
+ GET / 200 in 26ms
+ GET / 200 in 28ms
+ GET / 200 in 26ms
+ GET / 200 in 27ms
+ GET / 200 in 24ms
+ GET / 200 in 28ms
+ GET / 200 in 24ms
+ GET / 200 in 26ms
+ GET / 200 in 27ms
+ GET / 200 in 26ms
+ GET / 200 in 27ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 26ms
+ GET / 200 in 23ms
+ GET / 200 in 26ms
+ GET / 200 in 25ms
+ GET / 200 in 26ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 28ms
+ GET / 200 in 25ms
+ GET / 200 in 27ms
+ GET / 200 in 23ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms
+ GET / 200 in 28ms
+ GET / 200 in 26ms
+ GET / 200 in 25ms
+ GET / 200 in 24ms
+ GET / 200 in 27ms
+ GET / 200 in 25ms
+ GET / 200 in 22ms
+ GET / 200 in 29ms
+ GET / 200 in 25ms
+ GET / 200 in 25ms

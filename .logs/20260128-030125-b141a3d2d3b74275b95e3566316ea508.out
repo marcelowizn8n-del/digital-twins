@@ -1,0 +1,7 @@
+app/api/patient/[id]/route.ts(4,8): error TS2613: Module '"/home/ubuntu/digital_twins/nextjs_space/lib/db"' has no default export. Did you mean to use 'import { prisma } from "/home/ubuntu/digital_twins/nextjs_space/lib/db"' instead?
+app/api/patient/[id]/route.ts(31,52): error TS7006: Parameter 'record' implicitly has an 'any' type.
+app/api/patients/route.ts(4,8): error TS2613: Module '"/home/ubuntu/digital_twins/nextjs_space/lib/db"' has no default export. Did you mean to use 'import { prisma } from "/home/ubuntu/digital_twins/nextjs_space/lib/db"' instead?
+app/api/patients/route.ts(19,46): error TS7006: Parameter 'patient' implicitly has an 'any' type.
+app/api/patients/route.ts(21,37): error TS7006: Parameter 'record' implicitly has an 'any' type.
+components/digital-twin-viewer.tsx(26,17): error TS2540: Cannot assign to 'current' because it is a read-only property.
+exit_code=2
