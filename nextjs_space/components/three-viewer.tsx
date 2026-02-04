@@ -12,8 +12,8 @@ useGLTF.preload('/models/avatar_morphable.glb');
 useGLTF.preload('/models/avatar_female.glb');
 
 // Alturas dos modelos 3D em cm
-const MODEL_HEIGHT_MALE = 173.2; // cm - altura do modelo GLB masculino HD
-const MODEL_HEIGHT_FEMALE = 177.3; // cm - altura do modelo GLB feminino HD
+const MODEL_HEIGHT_MALE = 173.2; // cm - altura do modelo GLB masculino
+const MODEL_HEIGHT_FEMALE = 177.2; // cm - altura do modelo GLB feminino
 
 interface AvatarProps {
   morphTargets: MorphTargets;
@@ -49,35 +49,43 @@ function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarPro
   const scale = heightCm / modelHeight;
 
   // CRÍTICO: Clonar a cena para ter uma instância independente
-  // Isso evita que mudanças afetem outras instâncias devido ao cache do useGLTF
   const clonedScene = useMemo(() => {
-    // Usar SkeletonUtils.clone para preservar morph targets
     const clone = SkeletonUtils.clone(gltf.scene);
     
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
+        const geometry = mesh.geometry;
         
-        // Configurar material
-        const skinColor = sex === 'F' ? 0xeee0db : 0xe8e4e0;
-        mesh.material = new THREE.MeshStandardMaterial({
+        // Criar novo material
+        const skinColor = sex === 'F' ? 0xeee0db : 0xe8d5c8;
+        const newMaterial = new THREE.MeshStandardMaterial({
           color: skinColor,
-          roughness: 0.4,
+          roughness: 0.5,
           metalness: 0.0,
           flatShading: false,
-          envMapIntensity: 0.8,
           side: THREE.DoubleSide,
         });
+        
+        mesh.material = newMaterial;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-
-        // Verificar se tem morph targets
-        if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
-          // Criar um novo array para morphTargetInfluences (independente do original)
-          const numTargets = mesh.morphTargetInfluences.length;
-          mesh.morphTargetInfluences = Array(numTargets).fill(0);
+        
+        // Verificar e configurar morph targets
+        const morphPositions = geometry.morphAttributes?.position;
+        if (morphPositions && morphPositions.length > 0) {
+          mesh.morphTargetInfluences = new Array(morphPositions.length).fill(0);
           meshRef.current = mesh;
-          console.log(`[Avatar] Modelo ${sex} clonado com ${numTargets} morph targets`);
+          console.log(`[Avatar] Modelo ${sex} com ${morphPositions.length} morph targets`);
+        } else if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
+          const numTargets = mesh.morphTargetInfluences.length;
+          mesh.morphTargetInfluences = new Array(numTargets).fill(0);
+          meshRef.current = mesh;
+          console.log(`[Avatar] Modelo ${sex} com ${numTargets} morph targets (via influences)`);
+        } else {
+          // Modelo sem morph targets - ainda assim usar como referência
+          meshRef.current = mesh;
+          console.log(`[Avatar] Modelo ${sex} carregado (sem morph targets)`);
         }
       }
     });
