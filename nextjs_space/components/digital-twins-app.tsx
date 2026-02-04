@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import PatientSelector from './patient-selector';
 import TimelineSlider from './timeline-slider';
 import ViewerLoader from './viewer-loader';
+import MetabolicRiskPanel from './metabolic-risk-panel';
 import { ClinicalToBodyMapper, MorphTargets } from '@/lib/clinical-mapper';
 import { Loader2, AlertCircle, Info, TrendingUp, TrendingDown, Minus, Activity, Scale, Ruler, Heart, Droplets, Zap, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -21,6 +22,22 @@ interface ClinicalRecord {
   diseaseCodes: string[];
   notes?: string | null;
   morphTargets: MorphTargets;
+  // Novos campos metabólicos
+  bmi?: number;
+  waistCm?: number;
+  systolicBp?: number;
+  diastolicBp?: number;
+  triglyceridesMgDl?: number;
+  hdlMgDl?: number;
+  ldlMgDl?: number;
+  totalCholesterolMgDl?: number;
+  fastingGlucoseMgDl?: number;
+  hasMetabolicSyndrome?: boolean;
+  physicalActivityLevel?: string;
+  smokingStatus?: string;
+  isOnAntihypertensive?: boolean;
+  isOnAntidiabetic?: boolean;
+  isOnLipidLowering?: boolean;
 }
 
 interface Patient {
@@ -407,6 +424,16 @@ export default function DigitalTwinsApp() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Painel de Risco Metabólico */}
+              {currentRecordData?.id && selectedPatient && (
+                <MetabolicRiskPanel
+                  patientId={selectedPatient.id}
+                  recordId={currentRecordData.id}
+                  clinicalData={currentRecordData}
+                  sex={selectedPatient.sex}
+                />
+              )}
             </TabsContent>
             
             <TabsContent value="simulacao" className="space-y-4 mt-4">

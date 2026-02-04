@@ -1,264 +1,757 @@
 import { PrismaClient } from '@prisma/client';
+import { syntheticPatients } from './synthetic_patients';
 
 const prisma = new PrismaClient();
 
+// Função para calcular se tem síndrome metabólica
+function calculateMetabolicSyndrome(record: any, sex: string): boolean {
+  let criteria = 0;
+  
+  // Critério 1: Cintura
+  if (sex === 'M' && record.waistCm >= 94) criteria++;
+  if (sex === 'F' && record.waistCm >= 80) criteria++;
+  
+  // Critério 2: Triglicerídeos
+  if (record.triglyceridesMgDl >= 150) criteria++;
+  
+  // Critério 3: HDL baixo
+  if (sex === 'M' && record.hdlMgDl < 40) criteria++;
+  if (sex === 'F' && record.hdlMgDl < 50) criteria++;
+  
+  // Critério 4: Pressão arterial
+  if (record.systolicBp >= 130 || record.diastolicBp >= 85) criteria++;
+  
+  // Critério 5: Glicemia
+  if (record.fastingGlucoseMgDl >= 100) criteria++;
+  
+  return criteria >= 3;
+}
+
 async function main() {
-  // Clear existing data
+  console.log('Limpando banco de dados...');
+  await prisma.predictionLog.deleteMany();
   await prisma.clinicalRecord.deleteMany();
   await prisma.patient.deleteMany();
 
-  // Patient 1: Pedro Magro - Paciente magro e saudável (REFERÊNCIA)
-  const pedro = await prisma.patient.create({
-    data: {
+  console.log('Criando pacientes sintéticos...');
+
+  // Pacientes manuais para garantir variação clínica representativa
+  const patientsData = [
+    {
       name: 'Pedro Magro',
       sex: 'M',
-      birthYear: 1990,
-      records: {
-        create: [
-          {
-            year: 2022,
-            heightCm: 178,
-            weightKg: 68,
-            diseaseCodes: [],
-            notes: 'Atleta amador - excelente condição física'
-          },
-          {
-            year: 2023,
-            heightCm: 178,
-            weightKg: 69,
-            diseaseCodes: [],
-            notes: 'Mantém rotina de exercícios'
-          },
-          {
-            year: 2024,
-            heightCm: 178,
-            weightKg: 70,
-            diseaseCodes: [],
-            notes: 'Saudável - sem condições crônicas'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 2: Roberto Obeso - Obesidade severa + todas as condições
-  const roberto = await prisma.patient.create({
-    data: {
+      birthYear: 1985,
+      records: [
+        {
+          year: 2022,
+          heightCm: 178,
+          weightKg: 68,
+          waistCm: 76,
+          systolicBp: 115,
+          diastolicBp: 72,
+          triglyceridesMgDl: 85,
+          hdlMgDl: 58,
+          ldlMgDl: 95,
+          totalCholesterolMgDl: 170,
+          fastingGlucoseMgDl: 82,
+          astUL: 22,
+          altUL: 25,
+          ggtUL: 18,
+          physicalActivityLevel: 'high',
+          smokingStatus: 'never',
+          auditScore: 4,
+          bdiScore: 3,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Paciente saudável, atleta amador',
+        },
+        {
+          year: 2023,
+          heightCm: 178,
+          weightKg: 69,
+          waistCm: 77,
+          systolicBp: 118,
+          diastolicBp: 74,
+          triglyceridesMgDl: 88,
+          hdlMgDl: 56,
+          ldlMgDl: 98,
+          totalCholesterolMgDl: 172,
+          fastingGlucoseMgDl: 84,
+          astUL: 23,
+          altUL: 26,
+          ggtUL: 19,
+          physicalActivityLevel: 'high',
+          smokingStatus: 'never',
+          auditScore: 4,
+          bdiScore: 2,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Mantém estilo de vida saudável',
+        },
+        {
+          year: 2024,
+          heightCm: 178,
+          weightKg: 70,
+          waistCm: 78,
+          systolicBp: 116,
+          diastolicBp: 73,
+          triglyceridesMgDl: 90,
+          hdlMgDl: 55,
+          ldlMgDl: 100,
+          totalCholesterolMgDl: 174,
+          fastingGlucoseMgDl: 85,
+          astUL: 22,
+          altUL: 24,
+          ggtUL: 18,
+          physicalActivityLevel: 'high',
+          smokingStatus: 'never',
+          auditScore: 3,
+          bdiScore: 2,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Excelente condição física',
+        },
+      ],
+    },
+    {
       name: 'Roberto Obeso',
       sex: 'M',
       birthYear: 1970,
-      records: {
-        create: [
-          {
-            year: 2019,
-            heightCm: 172,
-            weightKg: 95,
-            diseaseCodes: [],
-            notes: 'Obesidade grau I'
-          },
-          {
-            year: 2020,
-            heightCm: 172,
-            weightKg: 102,
-            diseaseCodes: ['E11'],
-            notes: 'Diabetes diagnosticado - obesidade grau II'
-          },
-          {
-            year: 2021,
-            heightCm: 172,
-            weightKg: 108,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Hipertensão diagnosticada'
-          },
-          {
-            year: 2022,
-            heightCm: 172,
-            weightKg: 115,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Obesidade grau III - indicação bariátrica'
-          },
-          {
-            year: 2023,
-            heightCm: 172,
-            weightKg: 120,
-            diseaseCodes: ['E11', 'I10', 'I25'],
-            notes: 'Doença cardíaca - angina de esforço'
-          },
-          {
-            year: 2024,
-            heightCm: 172,
-            weightKg: 125,
-            diseaseCodes: ['E11', 'I10', 'I25'],
-            notes: 'IMC 42.3 - obesidade mórbida com comorbidades'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 3: Ana Transformação - Caso de perda de peso dramática
-  const ana = await prisma.patient.create({
-    data: {
+      records: [
+        {
+          year: 2019,
+          heightCm: 172,
+          weightKg: 95,
+          waistCm: 102,
+          systolicBp: 135,
+          diastolicBp: 88,
+          triglyceridesMgDl: 180,
+          hdlMgDl: 38,
+          ldlMgDl: 145,
+          totalCholesterolMgDl: 220,
+          fastingGlucoseMgDl: 105,
+          astUL: 35,
+          altUL: 48,
+          ggtUL: 55,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 12,
+          bdiScore: 18,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Pré-diabético, sedentário',
+        },
+        {
+          year: 2020,
+          heightCm: 172,
+          weightKg: 102,
+          waistCm: 108,
+          systolicBp: 142,
+          diastolicBp: 92,
+          triglyceridesMgDl: 210,
+          hdlMgDl: 35,
+          ldlMgDl: 155,
+          totalCholesterolMgDl: 235,
+          fastingGlucoseMgDl: 128,
+          astUL: 42,
+          altUL: 58,
+          ggtUL: 72,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 14,
+          bdiScore: 22,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11'],
+          notes: 'Diagnóstico de diabetes tipo 2',
+        },
+        {
+          year: 2021,
+          heightCm: 172,
+          weightKg: 108,
+          waistCm: 114,
+          systolicBp: 148,
+          diastolicBp: 95,
+          triglyceridesMgDl: 245,
+          hdlMgDl: 32,
+          ldlMgDl: 165,
+          totalCholesterolMgDl: 250,
+          fastingGlucoseMgDl: 145,
+          astUL: 48,
+          altUL: 65,
+          ggtUL: 88,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 16,
+          bdiScore: 28,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Hipertensão diagnosticada, piora do diabetes',
+        },
+        {
+          year: 2022,
+          heightCm: 172,
+          weightKg: 115,
+          waistCm: 120,
+          systolicBp: 155,
+          diastolicBp: 98,
+          triglyceridesMgDl: 280,
+          hdlMgDl: 30,
+          ldlMgDl: 175,
+          totalCholesterolMgDl: 265,
+          fastingGlucoseMgDl: 168,
+          astUL: 55,
+          altUL: 72,
+          ggtUL: 105,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 18,
+          bdiScore: 32,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: true,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Iniciado estatina, obesidade grau II',
+        },
+        {
+          year: 2023,
+          heightCm: 172,
+          weightKg: 120,
+          waistCm: 125,
+          systolicBp: 160,
+          diastolicBp: 100,
+          triglyceridesMgDl: 310,
+          hdlMgDl: 28,
+          ldlMgDl: 180,
+          totalCholesterolMgDl: 275,
+          fastingGlucoseMgDl: 185,
+          astUL: 62,
+          altUL: 82,
+          ggtUL: 125,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 20,
+          bdiScore: 35,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: true,
+          diseaseCodes: ['E11', 'I10', 'I25'],
+          notes: 'Doença coronariana diagnosticada',
+        },
+        {
+          year: 2024,
+          heightCm: 172,
+          weightKg: 125,
+          waistCm: 130,
+          systolicBp: 165,
+          diastolicBp: 102,
+          triglyceridesMgDl: 340,
+          hdlMgDl: 26,
+          ldlMgDl: 185,
+          totalCholesterolMgDl: 285,
+          fastingGlucoseMgDl: 198,
+          astUL: 68,
+          altUL: 90,
+          ggtUL: 145,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 22,
+          bdiScore: 38,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: true,
+          diseaseCodes: ['E11', 'I10', 'I25'],
+          notes: 'Obesidade mórbida, múltiplas comorbidades',
+        },
+      ],
+    },
+    {
       name: 'Ana Transformação',
       sex: 'F',
-      birthYear: 1985,
-      records: {
-        create: [
-          {
-            year: 2019,
-            heightCm: 165,
-            weightKg: 98,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Obesidade + diabetes + hipertensão'
-          },
-          {
-            year: 2020,
-            heightCm: 165,
-            weightKg: 95,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Iniciou programa de emagrecimento'
-          },
-          {
-            year: 2021,
-            heightCm: 165,
-            weightKg: 85,
-            diseaseCodes: ['E11'],
-            notes: 'Hipertensão controlada sem medicação'
-          },
-          {
-            year: 2022,
-            heightCm: 165,
-            weightKg: 75,
-            diseaseCodes: ['E11'],
-            notes: 'Diabetes em remissão parcial'
-          },
-          {
-            year: 2023,
-            heightCm: 165,
-            weightKg: 68,
-            diseaseCodes: [],
-            notes: 'Todas as condições em remissão!'
-          },
-          {
-            year: 2024,
-            heightCm: 165,
-            weightKg: 65,
-            diseaseCodes: [],
-            notes: 'Peso ideal mantido - saudável'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 4: Carlos Moderado - Caso intermediário típico
-  const carlos = await prisma.patient.create({
-    data: {
+      birthYear: 1982,
+      records: [
+        {
+          year: 2019,
+          heightCm: 165,
+          weightKg: 98,
+          waistCm: 102,
+          systolicBp: 145,
+          diastolicBp: 92,
+          triglyceridesMgDl: 195,
+          hdlMgDl: 42,
+          ldlMgDl: 150,
+          totalCholesterolMgDl: 230,
+          fastingGlucoseMgDl: 118,
+          astUL: 38,
+          altUL: 52,
+          ggtUL: 65,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'current',
+          auditScore: 15,
+          bdiScore: 28,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Síndrome metabólica severa, tabagista',
+        },
+        {
+          year: 2020,
+          heightCm: 165,
+          weightKg: 95,
+          waistCm: 98,
+          systolicBp: 140,
+          diastolicBp: 88,
+          triglyceridesMgDl: 175,
+          hdlMgDl: 45,
+          ldlMgDl: 140,
+          totalCholesterolMgDl: 218,
+          fastingGlucoseMgDl: 110,
+          astUL: 35,
+          altUL: 48,
+          ggtUL: 58,
+          physicalActivityLevel: 'low',
+          smokingStatus: 'previous',
+          auditScore: 10,
+          bdiScore: 22,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Parou de fumar, iniciou caminhadas',
+        },
+        {
+          year: 2021,
+          heightCm: 165,
+          weightKg: 85,
+          waistCm: 90,
+          systolicBp: 132,
+          diastolicBp: 84,
+          triglyceridesMgDl: 145,
+          hdlMgDl: 52,
+          ldlMgDl: 125,
+          totalCholesterolMgDl: 200,
+          fastingGlucoseMgDl: 98,
+          astUL: 28,
+          altUL: 38,
+          ggtUL: 42,
+          physicalActivityLevel: 'moderate',
+          smokingStatus: 'previous',
+          auditScore: 6,
+          bdiScore: 15,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11'],
+          notes: 'Reversão parcial da síndrome metabólica',
+        },
+        {
+          year: 2022,
+          heightCm: 165,
+          weightKg: 75,
+          waistCm: 82,
+          systolicBp: 125,
+          diastolicBp: 78,
+          triglyceridesMgDl: 115,
+          hdlMgDl: 58,
+          ldlMgDl: 110,
+          totalCholesterolMgDl: 188,
+          fastingGlucoseMgDl: 92,
+          astUL: 24,
+          altUL: 32,
+          ggtUL: 32,
+          physicalActivityLevel: 'moderate',
+          smokingStatus: 'previous',
+          auditScore: 4,
+          bdiScore: 10,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11'],
+          notes: 'Suspensa medicação anti-hipertensiva',
+        },
+        {
+          year: 2023,
+          heightCm: 165,
+          weightKg: 68,
+          waistCm: 76,
+          systolicBp: 118,
+          diastolicBp: 74,
+          triglyceridesMgDl: 95,
+          hdlMgDl: 62,
+          ldlMgDl: 98,
+          totalCholesterolMgDl: 175,
+          fastingGlucoseMgDl: 86,
+          astUL: 22,
+          altUL: 28,
+          ggtUL: 25,
+          physicalActivityLevel: 'high',
+          smokingStatus: 'previous',
+          auditScore: 2,
+          bdiScore: 6,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Remissão do pré-diabetes',
+        },
+        {
+          year: 2024,
+          heightCm: 165,
+          weightKg: 65,
+          waistCm: 74,
+          systolicBp: 115,
+          diastolicBp: 72,
+          triglyceridesMgDl: 88,
+          hdlMgDl: 65,
+          ldlMgDl: 92,
+          totalCholesterolMgDl: 168,
+          fastingGlucoseMgDl: 82,
+          astUL: 20,
+          altUL: 25,
+          ggtUL: 22,
+          physicalActivityLevel: 'high',
+          smokingStatus: 'previous',
+          auditScore: 2,
+          bdiScore: 4,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Transformação completa, sem comorbidades',
+        },
+      ],
+    },
+    {
       name: 'Carlos Moderado',
       sex: 'M',
       birthYear: 1975,
-      records: {
-        create: [
-          {
-            year: 2019,
-            heightCm: 175,
-            weightKg: 78,
-            diseaseCodes: [],
-            notes: 'Leve sobrepeso'
-          },
-          {
-            year: 2020,
-            heightCm: 175,
-            weightKg: 82,
-            diseaseCodes: [],
-            notes: 'Ganho de peso na pandemia'
-          },
-          {
-            year: 2021,
-            heightCm: 175,
-            weightKg: 86,
-            diseaseCodes: [],
-            notes: 'Pré-diabetes identificado'
-          },
-          {
-            year: 2022,
-            heightCm: 175,
-            weightKg: 88,
-            diseaseCodes: ['E11'],
-            notes: 'Diabetes Tipo 2 confirmado'
-          },
-          {
-            year: 2023,
-            heightCm: 175,
-            weightKg: 91,
-            diseaseCodes: ['E11'],
-            notes: 'Tratamento com metformina'
-          },
-          {
-            year: 2024,
-            heightCm: 175,
-            weightKg: 94,
-            diseaseCodes: ['E11', 'I10'],
-            notes: 'Hipertensão desenvolvida'
-          }
-        ]
-      }
-    }
-  });
-
-  // Patient 5: Lucia Cardíaca - Foco em doença cardíaca
-  const lucia = await prisma.patient.create({
-    data: {
+      records: [
+        {
+          year: 2019,
+          heightCm: 175,
+          weightKg: 78,
+          waistCm: 88,
+          systolicBp: 125,
+          diastolicBp: 80,
+          triglyceridesMgDl: 120,
+          hdlMgDl: 48,
+          ldlMgDl: 115,
+          totalCholesterolMgDl: 185,
+          fastingGlucoseMgDl: 92,
+          astUL: 25,
+          altUL: 30,
+          ggtUL: 28,
+          physicalActivityLevel: 'low',
+          smokingStatus: 'never',
+          auditScore: 8,
+          bdiScore: 8,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Sobrepeso leve, estilo de vida sedentário',
+        },
+        {
+          year: 2020,
+          heightCm: 175,
+          weightKg: 82,
+          waistCm: 92,
+          systolicBp: 128,
+          diastolicBp: 82,
+          triglyceridesMgDl: 138,
+          hdlMgDl: 45,
+          ldlMgDl: 122,
+          totalCholesterolMgDl: 195,
+          fastingGlucoseMgDl: 98,
+          astUL: 28,
+          altUL: 35,
+          ggtUL: 35,
+          physicalActivityLevel: 'low',
+          smokingStatus: 'never',
+          auditScore: 10,
+          bdiScore: 10,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Ganho de peso durante pandemia',
+        },
+        {
+          year: 2021,
+          heightCm: 175,
+          weightKg: 86,
+          waistCm: 96,
+          systolicBp: 132,
+          diastolicBp: 85,
+          triglyceridesMgDl: 155,
+          hdlMgDl: 42,
+          ldlMgDl: 130,
+          totalCholesterolMgDl: 205,
+          fastingGlucoseMgDl: 105,
+          astUL: 32,
+          altUL: 42,
+          ggtUL: 45,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'never',
+          auditScore: 12,
+          bdiScore: 14,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: [],
+          notes: 'Pré-hipertenso, pré-diabético',
+        },
+        {
+          year: 2022,
+          heightCm: 175,
+          weightKg: 88,
+          waistCm: 99,
+          systolicBp: 138,
+          diastolicBp: 88,
+          triglyceridesMgDl: 172,
+          hdlMgDl: 40,
+          ldlMgDl: 138,
+          totalCholesterolMgDl: 215,
+          fastingGlucoseMgDl: 115,
+          astUL: 35,
+          altUL: 48,
+          ggtUL: 55,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'never',
+          auditScore: 14,
+          bdiScore: 18,
+          isOnAntihypertensive: false,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11'],
+          notes: 'Diabetes tipo 2 diagnosticado',
+        },
+        {
+          year: 2023,
+          heightCm: 175,
+          weightKg: 91,
+          waistCm: 102,
+          systolicBp: 142,
+          diastolicBp: 90,
+          triglyceridesMgDl: 188,
+          hdlMgDl: 38,
+          ldlMgDl: 145,
+          totalCholesterolMgDl: 225,
+          fastingGlucoseMgDl: 128,
+          astUL: 38,
+          altUL: 52,
+          ggtUL: 65,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'never',
+          auditScore: 15,
+          bdiScore: 22,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: false,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Hipertensão diagnosticada',
+        },
+        {
+          year: 2024,
+          heightCm: 175,
+          weightKg: 94,
+          waistCm: 105,
+          systolicBp: 145,
+          diastolicBp: 92,
+          triglyceridesMgDl: 205,
+          hdlMgDl: 36,
+          ldlMgDl: 152,
+          totalCholesterolMgDl: 235,
+          fastingGlucoseMgDl: 142,
+          astUL: 42,
+          altUL: 58,
+          ggtUL: 78,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'never',
+          auditScore: 16,
+          bdiScore: 25,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: true,
+          diseaseCodes: ['E11', 'I10'],
+          notes: 'Progressão típica para síndrome metabólica',
+        },
+      ],
+    },
+    {
       name: 'Lucia Cardíaca',
       sex: 'F',
-      birthYear: 1960,
-      records: {
-        create: [
-          {
-            year: 2021,
-            heightCm: 160,
-            weightKg: 72,
-            diseaseCodes: ['I10'],
-            notes: 'Hipertensão há 10 anos'
-          },
-          {
-            year: 2022,
-            heightCm: 160,
-            weightKg: 74,
-            diseaseCodes: ['I10'],
-            notes: 'ECG com alterações leves'
-          },
-          {
-            year: 2023,
-            heightCm: 160,
-            weightKg: 76,
-            diseaseCodes: ['I10', 'I25'],
-            notes: 'Infarto - 2 stents colocados'
-          },
-          {
-            year: 2024,
-            heightCm: 160,
-            weightKg: 78,
-            diseaseCodes: ['I10', 'I25'],
-            notes: 'Reabilitação cardíaca em andamento'
-          }
-        ]
-      }
-    }
-  });
+      birthYear: 1965,
+      records: [
+        {
+          year: 2021,
+          heightCm: 160,
+          weightKg: 72,
+          waistCm: 88,
+          systolicBp: 148,
+          diastolicBp: 94,
+          triglyceridesMgDl: 165,
+          hdlMgDl: 44,
+          ldlMgDl: 142,
+          totalCholesterolMgDl: 218,
+          fastingGlucoseMgDl: 102,
+          astUL: 30,
+          altUL: 38,
+          ggtUL: 42,
+          physicalActivityLevel: 'low',
+          smokingStatus: 'previous',
+          auditScore: 5,
+          bdiScore: 20,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: false,
+          diseaseCodes: ['I10'],
+          notes: 'Hipertensa de longa data',
+        },
+        {
+          year: 2022,
+          heightCm: 160,
+          weightKg: 74,
+          waistCm: 90,
+          systolicBp: 152,
+          diastolicBp: 96,
+          triglyceridesMgDl: 178,
+          hdlMgDl: 42,
+          ldlMgDl: 148,
+          totalCholesterolMgDl: 226,
+          fastingGlucoseMgDl: 108,
+          astUL: 32,
+          altUL: 42,
+          ggtUL: 48,
+          physicalActivityLevel: 'low',
+          smokingStatus: 'previous',
+          auditScore: 4,
+          bdiScore: 24,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: true,
+          diseaseCodes: ['I10'],
+          notes: 'Iniciado estatina por dislipidemia',
+        },
+        {
+          year: 2023,
+          heightCm: 160,
+          weightKg: 76,
+          waistCm: 92,
+          systolicBp: 155,
+          diastolicBp: 98,
+          triglyceridesMgDl: 192,
+          hdlMgDl: 40,
+          ldlMgDl: 155,
+          totalCholesterolMgDl: 235,
+          fastingGlucoseMgDl: 115,
+          astUL: 35,
+          altUL: 45,
+          ggtUL: 55,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 3,
+          bdiScore: 28,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: false,
+          isOnLipidLowering: true,
+          diseaseCodes: ['I10', 'I25'],
+          notes: 'Doença coronariana diagnosticada após angina',
+        },
+        {
+          year: 2024,
+          heightCm: 160,
+          weightKg: 78,
+          waistCm: 94,
+          systolicBp: 158,
+          diastolicBp: 100,
+          triglyceridesMgDl: 205,
+          hdlMgDl: 38,
+          ldlMgDl: 160,
+          totalCholesterolMgDl: 245,
+          fastingGlucoseMgDl: 122,
+          astUL: 38,
+          altUL: 50,
+          ggtUL: 62,
+          physicalActivityLevel: 'inactive',
+          smokingStatus: 'previous',
+          auditScore: 2,
+          bdiScore: 32,
+          isOnAntihypertensive: true,
+          isOnAntidiabetic: true,
+          isOnLipidLowering: true,
+          diseaseCodes: ['I10', 'I25', 'E11'],
+          notes: 'Diabetes tipo 2 após eventos cardiovasculares',
+        },
+      ],
+    },
+  ];
 
-  console.log('Seeded patients:', { 
-    pedro: pedro.id, 
-    roberto: roberto.id, 
-    ana: ana.id, 
-    carlos: carlos.id,
-    lucia: lucia.id
-  });
+  for (const patientData of patientsData) {
+    const patient = await prisma.patient.create({
+      data: {
+        name: patientData.name,
+        sex: patientData.sex,
+        birthYear: patientData.birthYear,
+        records: {
+          create: patientData.records.map((record) => {
+            const bmi = record.weightKg / Math.pow(record.heightCm / 100, 2);
+            const hasMS = calculateMetabolicSyndrome(record, patientData.sex);
+            
+            return {
+              year: record.year,
+              heightCm: record.heightCm,
+              weightKg: record.weightKg,
+              bmi: parseFloat(bmi.toFixed(2)),
+              waistCm: record.waistCm,
+              systolicBp: record.systolicBp,
+              diastolicBp: record.diastolicBp,
+              triglyceridesMgDl: record.triglyceridesMgDl,
+              hdlMgDl: record.hdlMgDl,
+              ldlMgDl: record.ldlMgDl,
+              totalCholesterolMgDl: record.totalCholesterolMgDl,
+              fastingGlucoseMgDl: record.fastingGlucoseMgDl,
+              astUL: record.astUL,
+              altUL: record.altUL,
+              ggtUL: record.ggtUL,
+              physicalActivityLevel: record.physicalActivityLevel,
+              smokingStatus: record.smokingStatus,
+              auditScore: record.auditScore,
+              bdiScore: record.bdiScore,
+              isOnAntihypertensive: record.isOnAntihypertensive,
+              isOnAntidiabetic: record.isOnAntidiabetic,
+              isOnLipidLowering: record.isOnLipidLowering,
+              hasMetabolicSyndrome: hasMS,
+              diseaseCodes: record.diseaseCodes,
+              notes: record.notes,
+            };
+          }),
+        },
+      },
+    });
+
+    console.log(`Criado paciente: ${patient.name} (${patient.id})`);
+  }
+
+  console.log('\nSeed concluído com sucesso!');
+  console.log('Pacientes criados:', patientsData.length);
 }
 
 main()
   .catch((e) => {
-    console.error(e);
+    console.error('Erro no seed:', e);
     process.exit(1);
   })
   .finally(async () => {
