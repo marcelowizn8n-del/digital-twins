@@ -12,8 +12,8 @@ useGLTF.preload('/models/avatar_morphable.glb');
 useGLTF.preload('/models/avatar_female.glb');
 
 // Alturas dos modelos 3D em cm
-const MODEL_HEIGHT_MALE = 173.2;
-const MODEL_HEIGHT_FEMALE = 171.2;
+const MODEL_HEIGHT_MALE = 190.0; // cm - altura do modelo GLB masculino
+const MODEL_HEIGHT_FEMALE = 190.0; // cm - altura do modelo GLB feminino
 
 interface AvatarProps {
   morphTargets: MorphTargets;
