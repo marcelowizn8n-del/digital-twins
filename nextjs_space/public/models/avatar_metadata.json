@@ -50,8 +50,8 @@
       ]
     }
   },
-  "vertexCount": 18057,
-  "faceCount": 33240,
+  "vertexCount": 3455,
+  "faceCount": 6790,
   "height": 1.75,
-  "source": "Human Body Model (Rotated & Scaled)"
+  "generator": "create_fixed_avatar.py"
 }

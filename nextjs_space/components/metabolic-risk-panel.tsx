@@ -114,7 +114,7 @@ function MSComponent({
   isBelowThreshold = false 
 }: { 
   label: string; 
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   value?: number; 
   unit: string; 
   threshold: number;
