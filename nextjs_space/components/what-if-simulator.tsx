@@ -57,9 +57,7 @@ export default function WhatIfSimulator({
   // Wrapper para atualizar estado e notificar modelo 3D
   const setWeightLoss = (value: number) => {
     setWeightLossState(value);
-    if (onWeightChange) {
-      onWeightChange(value);
-    }
+    onWeightChange?.(value);
   };
   const [activityLevel, setActivityLevel] = useState<string>(currentActivityLevel);
   const [startStatin, setStartStatin] = useState(false);

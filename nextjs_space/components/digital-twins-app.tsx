@@ -480,19 +480,12 @@ export default function DigitalTwinsApp() {
                   currentWeight={currentRecordData.weightKg}
                   currentActivityLevel={currentRecordData.physicalActivityLevel}
                   onWeightChange={(weightLossKg) => {
-                    if (weightLossKg > 0) {
-                      // Converter perda de peso em kg para fator de simulação negativo
-                      // Ex: perder 10kg de 80kg = -12.5% = -0.125 no fator
-                      const factor = -(weightLossKg / currentRecordData.weightKg);
-                      setSimulatedWeight(factor);
-                      setSimulatedAbdomen(factor * 0.8); // Abdômen reduz proporcionalmente
-                      setSimulationMode(true); // Ativar modo simulação
-                    } else {
-                      // Resetar quando peso volta para 0
-                      setSimulatedWeight(0);
-                      setSimulatedAbdomen(0);
-                      setSimulationMode(false);
-                    }
+                    // Converter perda de peso em kg para fator de simulação negativo
+                    // Ex: perder 10kg de 80kg = -12.5% = -0.125 no fator
+                    const factor = weightLossKg > 0 ? -(weightLossKg / currentRecordData.weightKg) : 0;
+                    setSimulatedWeight(factor);
+                    setSimulatedAbdomen(factor * 0.8);
+                    setSimulationMode(weightLossKg > 0);
                   }}
                 />
               )}
