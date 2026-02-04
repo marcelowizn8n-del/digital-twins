@@ -200,10 +200,27 @@ export default function DigitalTwinsApp() {
     
     if (!simulationMode) return baseMorphTargets;
     
+    // Aplicar simulação com escala proporcional
+    // simulatedWeight/Abdomen vai de -0.3 a +0.3
+    // Se negativo: reduz proporcionalmente o valor atual
+    // Se positivo: aumenta proporcionalmente em direção a 1.0
+    const applySimulation = (baseValue: number, delta: number) => {
+      if (delta < 0) {
+        // Perda: reduz proporcionalmente (delta=-0.3 → reduz 30% do valor atual)
+        return Math.max(0, baseValue * (1 + delta));
+      } else {
+        // Ganho: aumenta em direção a 1.0 (delta=+0.3 → aumenta 30% do espaço restante)
+        const remaining = 1 - baseValue;
+        return Math.min(1, baseValue + remaining * delta);
+      }
+    };
+    
     return {
       ...baseMorphTargets,
-      Weight: Math.max(0, Math.min(1, baseMorphTargets.Weight + simulatedWeight)),
-      AbdomenGirth: Math.max(0, Math.min(1, baseMorphTargets.AbdomenGirth + simulatedAbdomen)),
+      Weight: applySimulation(baseMorphTargets.Weight, simulatedWeight),
+      AbdomenGirth: applySimulation(baseMorphTargets.AbdomenGirth, simulatedAbdomen),
+      // Perda de peso também afeta massa muscular positivamente
+      MuscleMass: Math.max(0, Math.min(1, baseMorphTargets.MuscleMass + (simulatedWeight < 0 ? Math.abs(simulatedWeight) * 0.3 : -simulatedWeight * 0.2))),
     };
   }, [currentRecordData, simulationMode, simulatedWeight, simulatedAbdomen]);
 
@@ -496,8 +513,8 @@ export default function DigitalTwinsApp() {
                         <Slider
                           value={[simulatedWeight * 100]}
                           onValueChange={(v) => setSimulatedWeight(v[0] / 100)}
-                          min={-30}
-                          max={30}
+                          min={-50}
+                          max={50}
                           step={5}
                           className="w-full"
                         />
@@ -517,8 +534,8 @@ export default function DigitalTwinsApp() {
                         <Slider
                           value={[simulatedAbdomen * 100]}
                           onValueChange={(v) => setSimulatedAbdomen(v[0] / 100)}
-                          min={-30}
-                          max={30}
+                          min={-50}
+                          max={50}
                           step={5}
                           className="w-full"
                         />
