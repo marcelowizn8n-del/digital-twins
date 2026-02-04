@@ -10,78 +10,64 @@ datasource db {
 }
 
 model Patient {
-  id          String           @id @default(cuid())
-  name        String
-  sex         String           // "M" or "F"
-  birthYear   Int
-  birthDate   DateTime?        // Data de nascimento completa
-  createdAt   DateTime         @default(now())
-  records     ClinicalRecord[]
+  id        String           @id @default(cuid())
+  name      String
+  sex       String
+  birthYear Int
+  birthDate DateTime?
+  createdAt DateTime         @default(now())
+  records   ClinicalRecord[]
 }
 
 model ClinicalRecord {
-  id           String   @id @default(cuid())
-  patientId    String
-  year         Int
-  visitDate    DateTime?        // Data exata da visita (granularidade melhor que "ano")
-  
-  // DADOS ANTROPOMÉTRICOS EXISTENTES
-  heightCm     Float
-  weightKg     Float
-  diseaseCodes String[]         // ICD-10 codes array
-  notes        String?
-  
-  // NOVOS CAMPOS - Componentes da Síndrome Metabólica
-  waistCm              Float?   // Circunferência abdominal
-  systolicBp           Float?   // Pressão arterial sistólica (mmHg)
-  diastolicBp          Float?   // Pressão arterial diastólica (mmHg)
-  triglyceridesMgDl    Float?   // Triglicerídeos (mg/dL)
-  hdlMgDl              Float?   // HDL-colesterol (mg/dL)
-  ldlMgDl              Float?   // LDL-colesterol (mg/dL)
-  totalCholesterolMgDl Float?   // Colesterol total (mg/dL)
-  fastingGlucoseMgDl   Float?   // Glicemia de jejum (mg/dL)
-  
-  // NOVOS CAMPOS - Medicamentos em uso
-  isOnAntihypertensive Boolean? @default(false)  // Anti-hipertensivo
-  isOnAntidiabetic     Boolean? @default(false)  // Antidiabético
-  isOnLipidLowering    Boolean? @default(false)  // Hipolipemiante
-  
-  // NOVOS CAMPOS - Estilo de Vida
-  physicalActivityLevel String?  // 'inactive'|'low'|'moderate'|'high'
-  smokingStatus         String?  // 'never'|'previous'|'current'
-  auditScore            Int?     // AUDIT - Álcool (0-40)
-  bdiScore              Int?     // BDI - Depressão (0-63)
-  
-  // NOVOS CAMPOS - Marcadores Hepáticos
-  astUL                 Float?   // AST (U/L)
-  altUL                 Float?   // ALT (U/L)
-  ggtUL                 Float?   // GGT (U/L)
-  
-  // CAMPOS DERIVADOS
-  bmi                   Float?   // Cache do IMC calculado
-  hasMetabolicSyndrome  Boolean? // Calculado: 3+ de 5 critérios
-  metabolicRiskScore    Float?   // Score de risco metabólico (0-1)
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id                    String    @id @default(cuid())
+  patientId             String
+  year                  Int
+  visitDate             DateTime?
+  heightCm              Float
+  weightKg              Float
+  diseaseCodes          String[]
+  notes                 String?
+  waistCm               Float?
+  systolicBp            Float?
+  diastolicBp           Float?
+  triglyceridesMgDl     Float?
+  hdlMgDl               Float?
+  ldlMgDl               Float?
+  totalCholesterolMgDl  Float?
+  fastingGlucoseMgDl    Float?
+  isOnAntihypertensive  Boolean?  @default(false)
+  isOnAntidiabetic      Boolean?  @default(false)
+  isOnLipidLowering     Boolean?  @default(false)
+  physicalActivityLevel String?
+  smokingStatus         String?
+  auditScore            Int?
+  bdiScore              Int?
+  astUL                 Float?
+  altUL                 Float?
+  ggtUL                 Float?
+  bmi                   Float?
+  hasMetabolicSyndrome  Boolean?
+  metabolicRiskScore    Float?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  patient               Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@unique([patientId, year])
   @@index([patientId, year])
 }
 
-// Log de predições para auditoria
 model PredictionLog {
   id            String   @id @default(cuid())
   timestamp     DateTime @default(now())
   patientId     String
   recordId      String
   modelVersion  String
-  inputFeatures Json     // Features usadas na predição
-  prediction    Float    // Probabilidade de risco (0-1)
-  userId        String?  // ID do médico que solicitou
-  context       String   // 'clinical_review' | 'patient_engagement' | 'simulation'
-  
+  inputFeatures Json
+  prediction    Float
+  userId        String?
+  context       String
+
   @@index([patientId, timestamp])
   @@index([modelVersion])
 }

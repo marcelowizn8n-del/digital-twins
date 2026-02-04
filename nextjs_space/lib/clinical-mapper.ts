@@ -1,4 +1,5 @@
 // ClinicalToBodyMapper - Evidence-based clinical parameter calculation
+// FIDELIDADE AOS DADOS: Mapeia dados reais do paciente para morph targets
 
 export interface PatientInput {
   heightCm: number;
@@ -6,6 +7,9 @@ export interface PatientInput {
   age: number;
   sex: 'M' | 'F';
   diseaseCodes: string[];
+  // Dados opcionais para maior fidelidade
+  waistCm?: number;
+  physicalActivityLevel?: string;
 }
 
 export interface MorphTargets {
@@ -19,16 +23,20 @@ export interface MorphTargets {
 }
 
 export class ClinicalToBodyMapper {
-  private static readonly BMI_MIN = 18;  // IMC mínimo saudável
-  private static readonly BMI_MAX = 45;  // IMC de obesidade mórbida
+  // Ranges baseados em dados epidemiológicos reais
+  // IMC
+  private static readonly BMI_MIN = 18.5;   // Limite inferior saudável
+  private static readonly BMI_MAX = 40;     // Obesidade grau III
+  
+  // Circunferência abdominal (cm) - valores de referência OMS
+  private static readonly WAIST_MIN_M = 70;   // Homem magro
+  private static readonly WAIST_MAX_M = 130;  // Obesidade abdominal severa
+  private static readonly WAIST_MIN_F = 60;   // Mulher magra
+  private static readonly WAIST_MAX_F = 120;  // Obesidade abdominal severa
 
-  // Calculate BMI and normalize to 0-1 scale
-  private static calculateNormalizedBMI(heightCm: number, weightKg: number): number {
-    const heightM = heightCm / 100;
-    const bmi = weightKg / (heightM * heightM);
-    // Clamp and normalize to 0-1
-    const clamped = Math.max(this.BMI_MIN, Math.min(this.BMI_MAX, bmi));
-    return (clamped - this.BMI_MIN) / (this.BMI_MAX - this.BMI_MIN);
+  // Normaliza valor para 0-1 com base no range
+  private static normalize(value: number, min: number, max: number): number {
+    return Math.max(0, Math.min(1, (value - min) / (max - min)));
   }
 
   // Clamp value to 0-1 range
@@ -37,38 +45,79 @@ export class ClinicalToBodyMapper {
   }
 
   static calculate(input: PatientInput): MorphTargets {
-    const normalizedBMI = this.calculateNormalizedBMI(input.heightCm, input.weightKg);
+    const heightM = input.heightCm / 100;
+    const bmi = input.weightKg / (heightM * heightM);
     
-    // Base modifiers from BMI - valores moderados para deformações sutis
-    // normalizedBMI vai de 0 (IMC 18) a 1 (IMC 45)
-    let weightModifier = normalizedBMI * 0.35;  // Max 0.35 só do IMC
-    let abdomenModifier = normalizedBMI * 0.40; // Abdômen responde mais ao peso
-    let muscleModifier = 0.25 - (normalizedBMI * 0.1); // Menos músculo com mais peso
-    let postureModifier = Math.min(0.2, (input.age - 30) / 150); // Age-based posture (mais sutil)
+    // === WEIGHT: Baseado no IMC real ===
+    // IMC 18.5 = 0%, IMC 40 = 100%
+    const normalizedBMI = this.normalize(bmi, this.BMI_MIN, this.BMI_MAX);
+    let weightModifier = normalizedBMI * 0.8; // Permite até 80% de deformação
     
-    // Disease-specific effects - valores moderados
+    // === ABDOMEN: Usa circunferência abdominal REAL se disponível ===
+    let abdomenModifier: number;
+    if (input.waistCm) {
+      // Usa dado real da circunferência abdominal
+      const waistMin = input.sex === 'M' ? this.WAIST_MIN_M : this.WAIST_MIN_F;
+      const waistMax = input.sex === 'M' ? this.WAIST_MAX_M : this.WAIST_MAX_F;
+      abdomenModifier = this.normalize(input.waistCm, waistMin, waistMax) * 0.9;
+    } else {
+      // Estima baseado no IMC (correlação ~0.8 com circunferência)
+      abdomenModifier = normalizedBMI * 0.85;
+    }
+    
+    // === MUSCLE MASS: Baseado em atividade física e IMC ===
+    let muscleModifier = 0.3; // Base moderada
+    if (input.physicalActivityLevel) {
+      switch (input.physicalActivityLevel) {
+        case 'sedentary':
+          muscleModifier = 0.15;
+          break;
+        case 'light':
+          muscleModifier = 0.25;
+          break;
+        case 'moderate':
+          muscleModifier = 0.4;
+          break;
+        case 'active':
+          muscleModifier = 0.6;
+          break;
+        case 'very_active':
+          muscleModifier = 0.8;
+          break;
+      }
+    }
+    // IMC muito alto reduz aparência de massa muscular
+    muscleModifier = muscleModifier * (1 - normalizedBMI * 0.4);
+    
+    // === POSTURE: Baseado na idade e doenças ===
+    let postureModifier = 0;
+    if (input.age > 40) {
+      postureModifier = Math.min(0.5, (input.age - 40) / 80);
+    }
+    
+    // === EFEITOS DE DOENÇAS ===
     let diabetesEffect = 0;
     let heartDiseaseEffect = 0;
     let hypertensionEffect = 0;
 
-    // Apply disease modifiers per clinical mapping rules
     for (const code of input.diseaseCodes) {
       switch (code) {
-        case 'E11': // Diabetes Type 2 - acúmulo abdominal característico
-          weightModifier += 0.04;
-          abdomenModifier += 0.08;
-          diabetesEffect = 0.25;
+        case 'E11': // Diabetes Type 2
+          // Diabetes está fortemente associado a gordura visceral
+          diabetesEffect = 0.6;
+          abdomenModifier = Math.min(1, abdomenModifier + 0.15);
+          weightModifier = Math.min(1, weightModifier + 0.1);
           break;
-        case 'I10': // Hypertension - edema leve
-          weightModifier += 0.03;
-          abdomenModifier += 0.04;
-          muscleModifier -= 0.02;
-          hypertensionEffect = 0.2;
+        case 'I10': // Hipertensão
+          hypertensionEffect = 0.5;
+          // Hipertensão associada a sobrepeso
+          weightModifier = Math.min(1, weightModifier + 0.08);
           break;
-        case 'I25': // Heart Disease - postura afetada
-          weightModifier += 0.03;
-          postureModifier += 0.08;
-          heartDiseaseEffect = 0.25;
+        case 'I25': // Doença cardíaca
+          heartDiseaseEffect = 0.6;
+          // Afeta postura e disposição física
+          postureModifier = Math.min(1, postureModifier + 0.2);
+          muscleModifier = Math.max(0, muscleModifier - 0.1);
           break;
       }
     }

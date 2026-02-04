@@ -93,9 +93,25 @@ export default function DigitalTwinsApp() {
         const res = await fetch('/api/patients');
         const data = await res.json();
         if (data?.success && data?.patients) {
-          setPatients(data.patients);
-          if (data.patients.length > 0) {
-            setSelectedPatientId(data.patients[0].id);
+          // Calcular morphTargets em tempo real com dados reais do paciente
+          const patientsWithMorphTargets = data.patients.map((patient: Patient) => ({
+            ...patient,
+            records: patient.records.map((record: ClinicalRecord) => ({
+              ...record,
+              morphTargets: ClinicalToBodyMapper.calculate({
+                heightCm: record.heightCm,
+                weightKg: record.weightKg,
+                age: record.year - patient.birthYear,
+                sex: patient.sex,
+                diseaseCodes: record.diseaseCodes || [],
+                waistCm: record.waistCm,
+                physicalActivityLevel: record.physicalActivityLevel,
+              }),
+            })),
+          }));
+          setPatients(patientsWithMorphTargets);
+          if (patientsWithMorphTargets.length > 0) {
+            setSelectedPatientId(patientsWithMorphTargets[0].id);
           }
         } else {
           setError('Falha ao carregar pacientes');
