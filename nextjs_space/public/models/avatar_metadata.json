@@ -50,8 +50,8 @@
       ]
     }
   },
-  "vertexCount": 3455,
-  "faceCount": 6790,
+  "vertexCount": 3012,
+  "faceCount": 5832,
   "height": 1.75,
-  "generator": "create_fixed_avatar.py"
+  "generator": "create_avatar_v2.py"
 }
