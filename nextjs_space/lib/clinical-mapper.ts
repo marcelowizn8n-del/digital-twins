@@ -39,14 +39,14 @@ export class ClinicalToBodyMapper {
   static calculate(input: PatientInput): MorphTargets {
     const normalizedBMI = this.calculateNormalizedBMI(input.heightCm, input.weightKg);
     
-    // Base modifiers from BMI - valores aumentados para variação visível
+    // Base modifiers from BMI - valores moderados para deformações sutis
     // normalizedBMI vai de 0 (IMC 18) a 1 (IMC 45)
-    let weightModifier = normalizedBMI * 0.7;  // Max 0.7 só do IMC
-    let abdomenModifier = normalizedBMI * 0.8; // Abdômen responde mais ao peso
-    let muscleModifier = 0.4 - (normalizedBMI * 0.2); // Menos músculo com mais peso
-    let postureModifier = Math.min(0.4, (input.age - 25) / 100); // Age-based posture
+    let weightModifier = normalizedBMI * 0.35;  // Max 0.35 só do IMC
+    let abdomenModifier = normalizedBMI * 0.40; // Abdômen responde mais ao peso
+    let muscleModifier = 0.25 - (normalizedBMI * 0.1); // Menos músculo com mais peso
+    let postureModifier = Math.min(0.2, (input.age - 30) / 150); // Age-based posture (mais sutil)
     
-    // Disease-specific effects - valores aumentados para serem visíveis
+    // Disease-specific effects - valores moderados
     let diabetesEffect = 0;
     let heartDiseaseEffect = 0;
     let hypertensionEffect = 0;
@@ -55,20 +55,20 @@ export class ClinicalToBodyMapper {
     for (const code of input.diseaseCodes) {
       switch (code) {
         case 'E11': // Diabetes Type 2 - acúmulo abdominal característico
-          weightModifier += 0.08;
-          abdomenModifier += 0.15;  // Diabetes causa mais gordura visceral
-          diabetesEffect = 0.5;
+          weightModifier += 0.04;
+          abdomenModifier += 0.08;
+          diabetesEffect = 0.25;
           break;
         case 'I10': // Hypertension - edema leve
-          weightModifier += 0.05;
-          abdomenModifier += 0.06;
-          muscleModifier -= 0.05;
-          hypertensionEffect = 0.4;
+          weightModifier += 0.03;
+          abdomenModifier += 0.04;
+          muscleModifier -= 0.02;
+          hypertensionEffect = 0.2;
           break;
         case 'I25': // Heart Disease - postura afetada
-          weightModifier += 0.06;
-          postureModifier += 0.15;  // Postura mais curvada
-          heartDiseaseEffect = 0.5;
+          weightModifier += 0.03;
+          postureModifier += 0.08;
+          heartDiseaseEffect = 0.25;
           break;
       }
     }
