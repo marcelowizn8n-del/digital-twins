@@ -5,8 +5,10 @@ import PatientSelector from './patient-selector';
 import TimelineSlider from './timeline-slider';
 import ViewerLoader from './viewer-loader';
 import MetabolicRiskPanel from './metabolic-risk-panel';
+import WhatIfSimulator from './what-if-simulator';
 import { ClinicalToBodyMapper, MorphTargets } from '@/lib/clinical-mapper';
-import { Loader2, AlertCircle, Info, TrendingUp, TrendingDown, Minus, Activity, Scale, Ruler, Heart, Droplets, Zap, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, AlertCircle, Info, TrendingUp, TrendingDown, Minus, Activity, Scale, Ruler, Heart, Droplets, Zap, Settings2, ChevronDown, ChevronUp, BarChart3, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -437,11 +439,22 @@ export default function DigitalTwinsApp() {
             </TabsContent>
             
             <TabsContent value="simulacao" className="space-y-4 mt-4">
+              {/* Simulador What-If Avançado */}
+              {currentRecordData?.id && selectedPatient && (
+                <WhatIfSimulator
+                  patientId={selectedPatient.id}
+                  recordId={currentRecordData.id}
+                  currentWeight={currentRecordData.weightKg}
+                  currentActivityLevel={currentRecordData.physicalActivityLevel}
+                />
+              )}
+              
+              {/* Simulação Visual do Avatar */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Settings2 className="w-5 h-5" />
-                    Modo Simulação "E se..."
+                    Visualização 3D "E se..."
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -451,7 +464,7 @@ export default function DigitalTwinsApp() {
                       onClick={() => setSimulationMode(!simulationMode)}
                       className="w-full"
                     >
-                      {simulationMode ? 'Desativar Simulação' : 'Ativar Simulação'}
+                      {simulationMode ? 'Desativar Visualização' : 'Ativar Visualização'}
                     </Button>
                   </div>
                   
@@ -538,18 +551,6 @@ export default function DigitalTwinsApp() {
                   )}
                 </CardContent>
               </Card>
-              
-              <Card className="bg-blue-50 border-blue-200">
-                <CardContent className="pt-4">
-                  <div className="flex gap-2">
-                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm text-blue-800">
-                      Use os controles acima para simular cenários "e se" e visualizar como mudanças 
-                      no peso ou circunferência abdominal afetariam a aparência do paciente.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -565,6 +566,28 @@ export default function DigitalTwinsApp() {
 
         {/* Coluna direita - Histórico e Tecnologia */}
         <div className="space-y-4">
+          {/* Link para Dashboard */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200">
+            <CardContent className="py-4">
+              <Link href="/dashboard" className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-blue-700 dark:text-blue-300 group-hover:text-blue-800">
+                      Dashboard de Performance
+                    </p>
+                    <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
+                      Métricas do modelo de risco metabólico
+                    </p>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-blue-500 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Histórico de Registros */}
           <Card>
             <CardHeader className="pb-2">
