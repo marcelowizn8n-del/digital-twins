@@ -866,13 +866,137 @@ async function main() {
     console.log(`✅ ${patient.name} (${patientData.sex}, ${2026 - patientData.birthYear}a) - SM: ${lastHasMS ? '⚠️ SIM' : '✓ NÃO'}`);
   }
 
+  // ==================================================================================
+  // GERAR 50 PACIENTES SINTÉTICOS VARIADOS
+  // ==================================================================================
+
+  const firstNamesM = ['Lucas', 'Mateus', 'Gabriel', 'Enzo', 'Leonardo', 'Thiago', 'Rafael', 'Gustavo', 'Felipe', 'Nicolas', 'Samuel', 'Bruno', 'Daniel', 'Marcos', 'Andre', 'Vitor', 'Luiz', 'Francisco', 'Antonio', 'Eduardo'];
+  const firstNamesF = ['Julia', 'Sophia', 'Isabella', 'Alice', 'Manuela', 'Laura', 'Luiza', 'Valentina', 'Helena', 'Beatriz', 'Mariana', 'Gabriela', 'Fernanda', 'Camila', 'Leticia', 'Amanda', 'Bruna', 'Vitoria', 'Larissa', 'Carolina'];
+  const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Almeida', 'Lopes', 'Soares', 'Fernandes', 'Vieira', 'Barbosa', 'Rocha', 'Dias', 'Nascimento', 'Andrade', 'Moreira', 'Nunes', 'Marques', 'Machado', 'Mendes', 'Freitas'];
+
+  const templates = patientsData.slice(-4); // Usar os últimos 4 perfis (Estudo) como base
+  const TOTAL_TO_GENERATE = 42;
+
+  console.log(`\n🎲 Gerando mais ${TOTAL_TO_GENERATE} pacientes sintéticos variados...`);
+
+  for (let i = 0; i < TOTAL_TO_GENERATE; i++) {
+    // 1. Escolher template base aleatório
+    const template = templates[Math.floor(Math.random() * templates.length)];
+    const isMale = template.sex === 'M';
+
+    // 2. Gerar Nome Único
+    const firstName = isMale
+      ? firstNamesM[Math.floor(Math.random() * firstNamesM.length)]
+      : firstNamesF[Math.floor(Math.random() * firstNamesF.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const fullName = `${firstName} ${lastName}`;
+
+    // 3. Variação de Idade (+/- 5 anos)
+    const ageVariation = Math.floor(Math.random() * 11) - 5;
+    const birthYear = template.birthYear + ageVariation;
+
+    const patient = await prisma.patient.create({
+      data: {
+        name: fullName,
+        sex: template.sex,
+        birthYear: birthYear,
+      },
+    });
+
+    // 4. Criar registro único (2024) com variações fisiológicas
+    const baseRecord = template.records[0];
+
+    // Variações aleatórias sutis (+/- 5-10%)
+    const vary = (val: number, pct: number) => val * (1 + (Math.random() * pct * 2 - pct) / 100);
+    const varyInt = (val: number, range: number) => Math.round(val + (Math.random() * range * 2 - range));
+
+    const heightCm = Math.round(vary(baseRecord.heightCm, 3)); // +/- 3% altura
+    const weightKg = parseFloat(vary(baseRecord.weightKg, 8).toFixed(1)); // +/- 8% peso
+    const waistCm = Math.round(vary(baseRecord.waistCm, 5)); // +/- 5% cintura
+
+    // Calcular BMI para ser consistente
+    const heightM = heightCm / 100;
+    const bmi = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
+
+    // Variações metabólicas
+    const systolicBp = varyInt(baseRecord.systolicBp, 5);
+    const diastolicBp = varyInt(baseRecord.diastolicBp, 4);
+    const triglyceridesMgDl = varyInt(baseRecord.triglyceridesMgDl, 15);
+    const hdlMgDl = varyInt(baseRecord.hdlMgDl, 5);
+    const fastingGlucoseMgDl = varyInt(baseRecord.fastingGlucoseMgDl, 8);
+
+    // Recalcular SM com os novos valores variados
+    const hasMetabolicSyndrome = calculateMetabolicSyndrome(
+      template.sex,
+      waistCm,
+      triglyceridesMgDl,
+      hdlMgDl,
+      systolicBp,
+      diastolicBp,
+      fastingGlucoseMgDl,
+      baseRecord.isOnAntihypertensive,
+      baseRecord.isOnAntidiabetic,
+      baseRecord.isOnLipidLowering
+    );
+
+    // Bioimpedância (reutilizando lógica aproximada)
+    const baseFat = template.sex === 'M' ? 15 : 25;
+    const fatFactor = (bmi - 22) * 1.5;
+    const bioImpedanceFat = Math.max(5, Math.min(60, baseFat + fatFactor + (Math.random() * 3 - 1.5)));
+    const bioImpedanceMuscle = Math.max(10, Math.min(60, (100 - bioImpedanceFat) * 0.45));
+    const bioImpedanceWater = Math.max(30, Math.min(70, 55 - (bioImpedanceFat * 0.1)));
+
+    const visceralBase = (waistCm || 90) - (template.sex === 'M' ? 85 : 75);
+    const bioImpedanceVisceral = Math.max(1, Math.min(30, Math.floor(5 + visceralBase * 0.5)));
+    const bioImpedanceBone = parseFloat((2.5 + (weightKg * 0.01)).toFixed(1));
+
+    const metabolicPenalty = (bmi > 25 ? (bmi - 25) * 1.5 : 0) + (hasMetabolicSyndrome ? 5 : -2);
+    const currentYear = new Date().getFullYear();
+    const realAge = currentYear - birthYear;
+    const bioImpedanceMetabolicAge = Math.floor(Math.max(18, realAge + metabolicPenalty));
+
+    await prisma.clinicalRecord.create({
+      data: {
+        patientId: patient.id,
+        year: 2024,
+        heightCm,
+        weightKg,
+        bmi,
+        waistCm,
+        systolicBp,
+        diastolicBp,
+        triglyceridesMgDl,
+        hdlMgDl,
+        ldlMgDl: varyInt(baseRecord.ldlMgDl, 10),
+        totalCholesterolMgDl: varyInt(baseRecord.totalCholesterolMgDl, 10),
+        fastingGlucoseMgDl,
+        hasMetabolicSyndrome,
+        bioImpedanceFat,
+        bioImpedanceMuscle,
+        bioImpedanceWater,
+        bioImpedanceVisceral,
+        bioImpedanceBone,
+        bioImpedanceMetabolicAge,
+        physicalActivityLevel: baseRecord.physicalActivityLevel,
+        smokingStatus: baseRecord.smokingStatus,
+        auditScore: baseRecord.auditScore,
+        bdiScore: baseRecord.bdiScore,
+        astUL: varyInt(baseRecord.astUL, 5),
+        altUL: varyInt(baseRecord.altUL, 5),
+        ggtUL: varyInt(baseRecord.ggtUL, 5),
+        isOnAntihypertensive: baseRecord.isOnAntihypertensive,
+        isOnAntidiabetic: baseRecord.isOnAntidiabetic,
+        isOnLipidLowering: baseRecord.isOnLipidLowering,
+        diseaseCodes: JSON.stringify(baseRecord.diseaseCodes),
+        notes: `Paciente sintético gerado via simulação epidemiológica (Base: ${template.name})`,
+      },
+    });
+  }
+
   console.log('\n📊 Resumo dos pacientes criados:');
-  console.log('   - 2 perfis saudáveis (João, Maria)');
-  console.log('   - 2 perfis com SM estabelecida (Roberto, Ana)');
-  console.log('   - 1 perfil em risco iminente (Carlos)');
-  console.log('   - 1 perfil com melhora (Lúcia)');
-  console.log('   - 1 perfil cardíaco grave (Pedro)');
-  console.log('   - 1 perfil atleta referência (Bruno)');
+  console.log('   - 8 perfis curados manualmente (João, Maria, Pedro, etc)');
+  console.log(`   - ${TOTAL_TO_GENERATE} perfis sintéticos variados baseados em epidemiologia`);
+  console.log(`   - TOTAL: ${8 + TOTAL_TO_GENERATE} Pacientes`);
   console.log('\n🎉 Seed concluído com sucesso!');
 }
 
