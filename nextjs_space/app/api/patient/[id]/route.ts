@@ -4,13 +4,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ClinicalToBodyMapper, MorphTargets } from '@/lib/clinical-mapper';
 
-interface ClinicalRecord {
+// Database record type (Prisma)
+interface DBClinicalRecord {
   id: string;
   year: number;
   heightCm: number;
   weightKg: number;
-  diseaseCodes: string[];
+  diseaseCodes: string; // Stored as CSV string in SQLite
   notes: string | null;
+  [key: string]: any;
+}
+
+// Frontend/API record type
+interface APIClinicalRecord extends Omit<DBClinicalRecord, 'diseaseCodes'> {
+  diseaseCodes: string[];
   morphTargets?: MorphTargets;
 }
 
@@ -38,15 +45,27 @@ export async function GET(
     // Calculate morph targets for each record
     const currentYear = new Date().getFullYear();
     const age = currentYear - patient.birthYear;
-    const recordsWithMorphs: ClinicalRecord[] = patient.records.map((record: ClinicalRecord) => {
+
+    // Map DB records to API records
+    const recordsWithMorphs: APIClinicalRecord[] = patient.records.map((record: any) => {
+      // Parse disease codes from string to array if needed
+      const diseaseCodesArray = typeof record.diseaseCodes === 'string'
+        ? record.diseaseCodes.split(',').filter((c: string) => c.length > 0)
+        : [];
+
       const morphTargets = ClinicalToBodyMapper.calculate({
         heightCm: record.heightCm,
         weightKg: record.weightKg,
         age,
         sex: patient.sex as 'M' | 'F',
-        diseaseCodes: record.diseaseCodes,
+        diseaseCodes: diseaseCodesArray,
       });
-      return { ...record, morphTargets };
+
+      return {
+        ...record,
+        diseaseCodes: diseaseCodesArray,
+        morphTargets
+      };
     });
 
     return NextResponse.json({
