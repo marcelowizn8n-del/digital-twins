@@ -48,50 +48,63 @@ export class ClinicalToBodyMapper {
     const heightM = input.heightCm / 100;
     const bmi = input.weightKg / (heightM * heightM);
 
-    // === WEIGHT: Baseado no IMC real ===
-    // IMC 18.5 = 0%, IMC 60 = 100%
-    const normalizedBMI = this.normalize(bmi, this.BMI_MIN, this.BMI_MAX);
+    // === WEIGHT: BMI Tiered Morphing ===
+    // Refined logic for visual accuracy:
+    // Tier 1 (BMI < 25): Linear sensitivity (Show every kg)
+    // Tier 2 (BMI 25-35): Power Curve (Focus on abdominal accumulation)
+    // Tier 3 (BMI > 35): Logarithmic Saturation (Model limits)
 
-    // NON-LINEAR MAPPING (Curve Power 0.7)
-    // Faz com que mudanças em IMCs mais baixos (25-35) sejam mais visíveis visualmente
-    // Ex: 0.2 ^ 0.7 = 0.32 (Aumenta percepção inicial)
-    // Ex: 0.8 ^ 0.7 = 0.85 (Mantém fidelidade no topo)
-    let weightModifier = Math.pow(normalizedBMI, 0.7);
+    let weightModifier = 0;
 
-    // === ABDOMEN: Usa circunferência abdominal REAL se disponível ===
+    if (bmi < 25) {
+      // Linear mapping for normal weight to show nuances
+      weightModifier = this.normalize(bmi, 15, 25) * 0.3; // Maps 15-25 to 0.0-0.3
+    } else if (bmi < 35) {
+      // Overweight/Obese I: Accelerated abdominal gain
+      // Maps 25-35 to 0.3-0.7
+      const t = this.normalize(bmi, 25, 35);
+      weightModifier = 0.3 + (Math.pow(t, 0.8) * 0.4);
+    } else {
+      // Obese II/III: Saturation
+      // Maps 35-60 to 0.7-1.0
+      const t = this.normalize(bmi, 35, 60);
+      weightModifier = 0.7 + (Math.log10(1 + t * 9) / 1) * 0.3; // Log curve
+    }
+
+    // === ABDOMEN: Uses REAL Waist or Estimated ===
     let abdomenModifier: number;
     if (input.waistCm) {
       const waistMin = input.sex === 'M' ? this.WAIST_MIN_M : this.WAIST_MIN_F;
       const waistMax = input.sex === 'M' ? this.WAIST_MAX_M : this.WAIST_MAX_F;
 
       const normalizedWaist = this.normalize(input.waistCm, waistMin, waistMax);
-      // Cintura também usa curva levemente não-linear para sensibilidade
-      abdomenModifier = Math.pow(normalizedWaist, 0.8);
 
-      // SUAVIZAÇÃO: Se o BMI já é alto, o morph "Weight" já aumenta a barriga.
-      // Reduzimos o "AbdomenGirth" proporcionalmente para evitar efeito duplo exagerado.
-      if (normalizedBMI > 0.4) {
-        // Redução gradual baseada no quão alto é o BMI
-        const dampeningFactor = Math.max(0.4, 1 - (normalizedBMI * 0.5));
-        abdomenModifier = abdomenModifier * dampeningFactor;
+      // Cintura reage mais rápido que o peso geral em SM
+      abdomenModifier = Math.pow(normalizedWaist, 0.7);
+
+      // BOOST para Síndrome Metabólica Central (barriga de chopp)
+      // Se BMI < 30 mas Cintura alta -> Enfatizar barriga
+      if (bmi < 30 && normalizedWaist > 0.5) {
+        abdomenModifier *= 1.2;
       }
     } else {
-      // Se não tiver cintura, usa IMC mas sem limitar artificialmente
-      abdomenModifier = weightModifier * 0.8;
+      // Estimativa baseada em BMI se sem cintura
+      abdomenModifier = weightModifier * 0.9;
     }
 
-    // === MUSCLE MASS: Baseado em atividade física ===
+    // === MUSCLE MASS: Baseado em atividade física (Ajustado pelo BMI) ===
     let muscleModifier = 0.25;
     if (input.physicalActivityLevel) {
       switch (input.physicalActivityLevel) {
         case 'sedentary': muscleModifier = 0.1; break;
         case 'light': muscleModifier = 0.2; break;
         case 'moderate': muscleModifier = 0.35; break;
-        case 'active': muscleModifier = 0.5; break;
-        case 'very_active': muscleModifier = 0.7; break;
+        case 'active': muscleModifier = 0.55; break;
+        case 'very_active': muscleModifier = 0.75; break;
       }
     }
-    muscleModifier = muscleModifier * (1 - normalizedBMI * 0.3);
+    // Efeito de "esconder" músculo sob gordura (visualmente)
+    muscleModifier = muscleModifier * (1 - Math.min(0.5, normalizedBMI * 0.5));
 
     // === POSTURE: Baseado na idade ===
     let postureModifier = 0;
