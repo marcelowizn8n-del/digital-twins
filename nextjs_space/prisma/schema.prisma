@@ -38,6 +38,13 @@ model ClinicalRecord {
   isOnAntihypertensive  Boolean?  @default(false)
   isOnAntidiabetic      Boolean?  @default(false)
   isOnLipidLowering     Boolean?  @default(false)
+  // Bioimpedance Data
+  bioImpedanceFat       Float?    // Body Fat %
+  bioImpedanceMuscle    Float?    // Muscle Mass %
+  bioImpedanceWater     Float?    // Body Water %
+  bioImpedanceVisceral  Float?    // Visceral Fat Rating (1-59)
+  bioImpedanceBone      Float?    // Bone Mass (kg)
+  bioImpedanceMetabolicAge Int?   // Metabolic Age (years)
   physicalActivityLevel String?
   smokingStatus         String?
   auditScore            Int?

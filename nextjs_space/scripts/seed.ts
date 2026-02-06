@@ -785,6 +785,31 @@ async function main() {
         record.isOnLipidLowering
       );
 
+      // Gerar dados de bioimpedância realistas
+      // Gordura: Homens 10-25%, Mulheres 20-35% (base + ajuste BMI)
+      const baseFat = patientData.sex === 'M' ? 15 : 25;
+      const fatFactor = (bmi - 22) * 1.5; // +gordura se BMI > 22
+      const bioImpedanceFat = Math.max(5, Math.min(60, baseFat + fatFactor + (Math.random() * 2 - 1)));
+
+      // Músculo: Inverso da gordura (aprox)
+      const bioImpedanceMuscle = Math.max(10, Math.min(60, (100 - bioImpedanceFat) * 0.45));
+
+      // Água: ~50-60%
+      const bioImpedanceWater = Math.max(30, Math.min(70, 55 - (bioImpedanceFat * 0.1)));
+
+      // Gordura visceral: 1-12 saudável, >13 excesso
+      const visceralBase = (record.waistCm || 90) - (patientData.sex === 'M' ? 85 : 75);
+      const bioImpedanceVisceral = Math.max(1, Math.min(30, Math.floor(5 + visceralBase * 0.5)));
+
+      // Osso: 2-3.5kg
+      const bioImpedanceBone = 2.5 + (record.weightKg * 0.01);
+
+      // Idade metabólica: Idade real + penalidade por BMI/Cintura
+      const metabolicPenalty = (bmi > 25 ? (bmi - 25) * 1.5 : 0) + (hasMetabolicSyndrome ? 5 : -2);
+      const currentYear = new Date().getFullYear();
+      const realAge = currentYear - patientData.birthYear;
+      const bioImpedanceMetabolicAge = Math.floor(Math.max(18, realAge + metabolicPenalty));
+
       await prisma.clinicalRecord.create({
         data: {
           patientId: patient.id,
@@ -801,6 +826,13 @@ async function main() {
           totalCholesterolMgDl: record.totalCholesterolMgDl,
           fastingGlucoseMgDl: record.fastingGlucoseMgDl,
           hasMetabolicSyndrome,
+          // New Bioimpedance Fields
+          bioImpedanceFat,
+          bioImpedanceMuscle,
+          bioImpedanceWater,
+          bioImpedanceVisceral,
+          bioImpedanceBone,
+          bioImpedanceMetabolicAge,
           physicalActivityLevel: record.physicalActivityLevel,
           smokingStatus: record.smokingStatus,
           auditScore: record.auditScore,

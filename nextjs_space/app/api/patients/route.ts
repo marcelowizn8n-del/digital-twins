@@ -96,6 +96,13 @@ export async function GET() {
           isOnAntihypertensive: record.isOnAntihypertensive,
           isOnAntidiabetic: record.isOnAntidiabetic,
           isOnLipidLowering: record.isOnLipidLowering,
+          // Bioimpedance
+          bioImpedanceFat: record.bioImpedanceFat,
+          bioImpedanceMuscle: record.bioImpedanceMuscle,
+          bioImpedanceWater: record.bioImpedanceWater,
+          bioImpedanceVisceral: record.bioImpedanceVisceral,
+          bioImpedanceBone: record.bioImpedanceBone,
+          bioImpedanceMetabolicAge: record.bioImpedanceMetabolicAge,
         };
       }),
     }));

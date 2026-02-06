@@ -40,6 +40,13 @@ interface ClinicalRecord {
   isOnAntihypertensive?: boolean;
   isOnAntidiabetic?: boolean;
   isOnLipidLowering?: boolean;
+  // Bioimpedance
+  bioImpedanceFat?: number;
+  bioImpedanceMuscle?: number;
+  bioImpedanceWater?: number;
+  bioImpedanceVisceral?: number;
+  bioImpedanceBone?: number;
+  bioImpedanceMetabolicAge?: number;
 }
 
 interface Patient {
@@ -94,21 +101,35 @@ export default function DigitalTwinsApp() {
         const data = await res.json();
         if (data?.success && data?.patients) {
           // Calcular morphTargets em tempo real com dados reais do paciente
-          const patientsWithMorphTargets = data.patients.map((patient: Patient) => ({
-            ...patient,
-            records: patient.records.map((record: ClinicalRecord) => ({
-              ...record,
-              morphTargets: ClinicalToBodyMapper.calculate({
-                heightCm: record.heightCm,
-                weightKg: record.weightKg,
-                age: record.year - patient.birthYear,
-                sex: patient.sex,
-                diseaseCodes: record.diseaseCodes || [],
-                waistCm: record.waistCm,
-                physicalActivityLevel: record.physicalActivityLevel,
-              }),
-            })),
-          }));
+          const patientsWithMorphTargets = data.patients.map((patient: Patient) => {
+            try {
+              return {
+                ...patient,
+                records: patient.records.map((record: ClinicalRecord) => {
+                  try {
+                    return {
+                      ...record,
+                      morphTargets: ClinicalToBodyMapper.calculate({
+                        heightCm: record.heightCm || 170, // Fallback prevent crash
+                        weightKg: record.weightKg || 70,
+                        age: patient.birthYear ? (record.year || new Date().getFullYear()) - patient.birthYear : 40,
+                        sex: (patient.sex === 'M' || patient.sex === 'F') ? patient.sex : 'M',
+                        diseaseCodes: Array.isArray(record.diseaseCodes) ? record.diseaseCodes : [],
+                        waistCm: record.waistCm,
+                        physicalActivityLevel: record.physicalActivityLevel,
+                      }),
+                    };
+                  } catch (innerErr) {
+                    console.error("Error mapping record:", innerErr);
+                    return { ...record, morphTargets: defaultMorphTargets };
+                  }
+                }),
+              };
+            } catch (err) {
+              console.error("Error mapping patient:", err);
+              return patient;
+            }
+          });
           setPatients(patientsWithMorphTargets);
           if (patientsWithMorphTargets.length > 0) {
             setSelectedPatientId(patientsWithMorphTargets[0].id);
@@ -355,7 +376,7 @@ export default function DigitalTwinsApp() {
                       <div className="text-xl font-bold">{currentRecordData?.weightKg?.toFixed(1) ?? '--'} kg</div>
                       {changeFromBaseline && (
                         <div className={`text-sm flex items-center gap-1 justify-end ${changeFromBaseline.weightKg > 0 ? 'text-red-600' :
-                            changeFromBaseline.weightKg < 0 ? 'text-green-600' : 'text-gray-500'
+                          changeFromBaseline.weightKg < 0 ? 'text-green-600' : 'text-gray-500'
                           }`}>
                           {changeFromBaseline.weightKg > 0 ? <TrendingUp className="w-4 h-4" /> :
                             changeFromBaseline.weightKg < 0 ? <TrendingDown className="w-4 h-4" /> :
@@ -460,6 +481,48 @@ export default function DigitalTwinsApp() {
                           Cardiopatia: {(finalMorphTargets.HeartDiseaseEffect * 100).toFixed(0)}%
                         </Badge>
                       )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Bioimpedance Analysis */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-indigo-600" />
+                    Bioimpedância Estimada
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {currentRecordData?.bioImpedanceFat ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 bg-indigo-50 rounded-lg text-center">
+                          <span className="text-sm text-indigo-600 block mb-1">Gordura Corporal</span>
+                          <span className="text-xl font-bold">{currentRecordData.bioImpedanceFat.toFixed(1)}%</span>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg text-center">
+                          <span className="text-sm text-blue-600 block mb-1">Massa Muscular</span>
+                          <span className="text-xl font-bold">{currentRecordData.bioImpedanceMuscle?.toFixed(1)}%</span>
+                        </div>
+                        <div className="p-3 bg-cyan-50 rounded-lg text-center">
+                          <span className="text-sm text-cyan-600 block mb-1">Água Corporal</span>
+                          <span className="text-xl font-bold">{currentRecordData.bioImpedanceWater?.toFixed(1)}%</span>
+                        </div>
+                        <div className="p-3 bg-orange-50 rounded-lg text-center">
+                          <span className="text-sm text-orange-600 block mb-1">Gordura Visceral</span>
+                          <span className="text-xl font-bold">{currentRecordData.bioImpedanceVisceral?.toFixed(0)}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm pt-2 border-t">
+                        <span className="text-gray-500">Massa Óssea: {currentRecordData.bioImpedanceBone?.toFixed(1)} kg</span>
+                        <span className="text-gray-500">Idade Metabólica: {currentRecordData.bioImpedanceMetabolicAge} anos</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-gray-400">
+                      Sem dados de bioimpedância para este registro.
                     </div>
                   )}
                 </CardContent>
@@ -645,8 +708,8 @@ export default function DigitalTwinsApp() {
                   <div
                     key={record.id}
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${record.year === currentYear
-                        ? 'bg-blue-50 border-blue-300'
-                        : 'bg-white hover:bg-gray-50'
+                      ? 'bg-blue-50 border-blue-300'
+                      : 'bg-white hover:bg-gray-50'
                       }`}
                     onClick={() => setCurrentYear(record.year)}
                   >
