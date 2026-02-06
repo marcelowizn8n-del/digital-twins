@@ -204,7 +204,9 @@ export default function ThreeViewer({ morphTargets, sex, heightCm }: ThreeViewer
   const avatarKey = `avatar-${sex}-${heightCm}`;
 
   // Ajustar câmera target baseado na altura do paciente
-  const cameraTargetY = (heightCm / 100) * 0.5; // Metade da altura em metros
+  // Ajustar câmera target baseado na altura do paciente (com fallback)
+  const safeHeight = (heightCm && !isNaN(heightCm) && heightCm > 0) ? heightCm : 170;
+  const cameraTargetY = (safeHeight / 100) * 0.5;
 
   return (
     <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-gray-300 to-gray-400 rounded-lg overflow-hidden">

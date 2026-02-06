@@ -74,6 +74,7 @@ const diseaseNames: Record<string, string> = {
 };
 
 function interpolateNumber(a: number, b: number, t: number): number {
+  if (isNaN(a) || isNaN(b) || isNaN(t)) return a || 0;
   return a + (b - a) * t;
 }
 

@@ -63,14 +63,14 @@ function RiskGauge({ value, size = 120 }: { value: number; size?: number }) {
   const percentage = value * 100;
   const circumference = 2 * Math.PI * 45;
   const strokeDasharray = `${(percentage / 100) * circumference} ${circumference}`;
-  
+
   const getColor = (v: number) => {
     if (v < 0.1) return '#10b981'; // green
     if (v < 0.2) return '#f59e0b'; // yellow
     if (v < 0.35) return '#f97316'; // orange
     return '#ef4444'; // red
   };
-  
+
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" className="transform -rotate-90">
@@ -104,29 +104,28 @@ function RiskGauge({ value, size = 120 }: { value: number; size?: number }) {
   );
 }
 
-function MSComponent({ 
-  label, 
-  icon: Icon, 
-  value, 
-  unit, 
-  threshold, 
+function MSComponent({
+  label,
+  icon: Icon,
+  value,
+  unit,
+  threshold,
   isAltered,
-  isBelowThreshold = false 
-}: { 
-  label: string; 
+  isBelowThreshold = false
+}: {
+  label: string;
   icon: React.ComponentType<{ className?: string }>;
-  value?: number; 
-  unit: string; 
+  value?: number;
+  unit: string;
   threshold: number;
   isAltered: boolean;
   isBelowThreshold?: boolean;
 }) {
   return (
-    <div className={`p-2.5 rounded-lg border transition-colors ${
-      isAltered 
-        ? 'border-red-300 bg-red-50 dark:bg-red-950/30' 
-        : 'border-green-300 bg-green-50 dark:bg-green-950/30'
-    }`}>
+    <div className={`p-2.5 rounded-lg border transition-colors ${isAltered
+      ? 'border-red-300 bg-red-50 dark:bg-red-950/30'
+      : 'border-green-300 bg-green-50 dark:bg-green-950/30'
+      }`}>
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className={`w-3.5 h-3.5 ${isAltered ? 'text-red-600' : 'text-green-600'}`} />
         <span className="text-xs font-medium">{label}</span>
@@ -142,49 +141,49 @@ function MSComponent({
   );
 }
 
-function getRiskLevel(probability: number): { 
-  label: string; 
-  color: string; 
+function getRiskLevel(probability: number): {
+  label: string;
+  color: string;
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
   description: string;
 } {
   if (probability < 0.1) {
-    return { 
-      label: 'Baixo', 
-      color: '#10b981', 
+    return {
+      label: 'Baixo',
+      color: '#10b981',
       variant: 'secondary',
       description: 'Risco baixo de desenvolver síndrome metabólica nos próximos 12 meses'
     };
   }
   if (probability < 0.2) {
-    return { 
-      label: 'Moderado', 
-      color: '#f59e0b', 
+    return {
+      label: 'Moderado',
+      color: '#f59e0b',
       variant: 'outline',
       description: 'Risco moderado - recomenda-se acompanhamento e mudanças de estilo de vida'
     };
   }
   if (probability < 0.35) {
-    return { 
-      label: 'Alto', 
-      color: '#f97316', 
+    return {
+      label: 'Alto',
+      color: '#f97316',
       variant: 'destructive',
       description: 'Risco alto - intervenção terapêutica recomendada'
     };
   }
-  return { 
-    label: 'Muito Alto', 
-    color: '#ef4444', 
+  return {
+    label: 'Muito Alto',
+    color: '#ef4444',
     variant: 'destructive',
     description: 'Risco muito alto - requer atenção médica imediata'
   };
 }
 
-export default function MetabolicRiskPanel({ 
-  patientId, 
-  recordId, 
+export default function MetabolicRiskPanel({
+  patientId,
+  recordId,
   clinicalData,
-  sex 
+  sex
 }: MetabolicRiskPanelProps) {
   const [riskData, setRiskData] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,21 +195,21 @@ export default function MetabolicRiskPanel({
         setLoading(false);
         return;
       }
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
         const response = await fetch('/api/predict-metabolic-risk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ patientId, recordId }),
         });
-        
+
         if (!response.ok) {
           throw new Error('Falha ao calcular risco');
         }
-        
+
         const data = await response.json();
         setRiskData(data);
       } catch (err) {
@@ -220,7 +219,7 @@ export default function MetabolicRiskPanel({
         setLoading(false);
       }
     }
-    
+
     fetchRisk();
   }, [patientId, recordId]);
 
@@ -250,9 +249,12 @@ export default function MetabolicRiskPanel({
     );
   }
 
-  const riskLevel = getRiskLevel(riskData.riskProbability);
-  const { componentStatus } = riskData.explanation;
-  
+  const riskLevel = getRiskLevel(riskData.riskProbability || 0);
+  const componentStatus = riskData.explanation?.componentStatus || {
+    waist: false, triglycerides: false, hdl: false, bloodPressure: false, glucose: false
+  };
+  const calibrationMetrics = riskData.calibrationMetrics || { rocAuc: 0, prAuc: 0, brierScore: 0 };
+
   // Thresholds baseados no sexo
   const waistThreshold = sex === 'M' ? 94 : 80;
   const hdlThreshold = sex === 'M' ? 40 : 50;
@@ -280,8 +282,8 @@ export default function MetabolicRiskPanel({
         <div className="flex flex-col items-center">
           <RiskGauge value={riskData.riskProbability} />
           <p className="text-xs text-gray-500 mt-1">em {riskData.timeHorizonMonths} meses</p>
-          <Badge 
-            variant={riskLevel.variant} 
+          <Badge
+            variant={riskLevel.variant}
             className="mt-2"
             style={{ backgroundColor: riskLevel.variant === 'destructive' ? riskLevel.color : undefined }}
           >
@@ -295,7 +297,7 @@ export default function MetabolicRiskPanel({
         {/* Status dos Componentes da SM */}
         <div className="space-y-2">
           <h4 className="text-sm font-semibold flex items-center gap-1">
-            Componentes da SM 
+            Componentes da SM
             <span className="text-xs font-normal text-gray-500">
               ({riskData.criteriaCount}/5 alterados)
             </span>
@@ -365,7 +367,7 @@ export default function MetabolicRiskPanel({
                       <span className="text-xs text-gray-500">
                         {factor.currentValue.toFixed(0)} {factor.unit}
                       </span>
-                      <Badge 
+                      <Badge
                         variant={factor.impact === 'high' ? 'destructive' : 'secondary'}
                         className="text-[10px] px-1.5 py-0"
                       >
@@ -381,7 +383,7 @@ export default function MetabolicRiskPanel({
 
         {/* Disclaimer */}
         <div className="text-[10px] text-gray-400 bg-gray-50 dark:bg-gray-900 p-2 rounded">
-          <p>Modelo: {riskData.modelVersion} | AUC-ROC: {riskData.calibrationMetrics.rocAuc.toFixed(3)}</p>
+          <p>Modelo: {riskData.modelVersion} | AUC-ROC: {calibrationMetrics.rocAuc.toFixed(3)}</p>
           <p className="mt-0.5">Este sistema é para fins educacionais. Sempre consulte um médico.</p>
         </div>
       </CardContent>
