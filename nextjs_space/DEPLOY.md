@@ -79,7 +79,51 @@ docker compose exec web npx prisma db seed
     docker compose restart
     ```
 
-## 4. Disponibilidade
+## 4. Configurando Domínio e SSL (Nginx)
 
-Sua aplicação estará rodando na porta **3000**.
-Se você tiver um domínio, precisará configurar um **Proxy Reverso** (Nginx) para apontar `seudominio.com` -> `localhost:3000`.
+Para colocar seu app em `digitaltwin.dttools.app` com HTTPS, usaremos o **Nginx** como Proxy Reverso.
+
+### Passo 1: Instalar Nginx e Certbot
+Na sua VPS:
+```bash
+sudo apt update
+sudo apt install nginx certbot python3-certbot-nginx
+```
+
+### Passo 2: Configurar o Nginx
+Crie um arquivo de configuração para o seu site:
+```bash
+sudo nano /etc/nginx/sites-available/digitaltwin
+```
+
+Copie o conteúdo do arquivo `nginx.conf.example` que está na pasta do projeto, ou use este modelo:
+
+```nginx
+server {
+    server_name digitaltwin.dttools.app;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Ative o site e reinicie o Nginx:
+```bash
+sudo ln -s /etc/nginx/sites-available/digitaltwin /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### Passo 3: Ativar SSL (HTTPS)
+O Certbot configura o certificado SSL automaticamente e de graça:
+
+```bash
+sudo certbot --nginx -d digitaltwin.dttools.app
+```
+Siga as instruções na tela e pronto! Seu app estará seguro e acessível.
