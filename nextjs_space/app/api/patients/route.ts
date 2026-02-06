@@ -111,7 +111,11 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching patients:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch patients' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      },
       { status: 500 }
     );
   }

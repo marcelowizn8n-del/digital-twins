@@ -135,10 +135,10 @@ export default function DigitalTwinsApp() {
             setSelectedPatientId(patientsWithMorphTargets[0].id);
           }
         } else {
-          setError('Falha ao carregar pacientes');
+          setError(`Erro: ${data.error || 'Falha ao carregar pacientes'} - ${data.details ? JSON.stringify(data.details).slice(0, 100) : ''}`);
         }
-      } catch (err) {
-        setError('Erro de conexão com o servidor');
+      } catch (err: any) {
+        setError(`Erro de conexão: ${err.message || 'Desconhecido'}`);
       } finally {
         setLoading(false);
       }
@@ -280,7 +280,7 @@ export default function DigitalTwinsApp() {
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center space-y-4 p-8 bg-white rounded-xl shadow-lg">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <p className="text-slate-800 font-medium">{error}</p>
+          <p className="text-slate-800 font-medium max-w-md break-words">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
