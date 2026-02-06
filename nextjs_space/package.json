@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "chmod -R +x node_modules/.bin/prisma node_modules/@prisma/engines || true && npx prisma generate && npx prisma db push && npx prisma db seed && next build && cp -r public .next/standalone/ && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r prisma .next/standalone/ && cp -r node_modules/.prisma .next/standalone/node_modules/ && chmod -R +x .next/standalone/node_modules/.prisma || true",
+    "build": "chmod -R +x node_modules/.bin/prisma node_modules/@prisma/engines || true && npx prisma generate && npx prisma db push && npx prisma db seed && next build && cp -r public .next/standalone/ && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r prisma .next/standalone/ && chmod -R +x .next/standalone/node_modules || true",
     "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "postinstall": "prisma generate"
