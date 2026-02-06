@@ -49,9 +49,22 @@ export async function GET(
     // Map DB records to API records
     const recordsWithMorphs: APIClinicalRecord[] = patient.records.map((record: any) => {
       // Parse disease codes from string to array if needed
-      const diseaseCodesArray = typeof record.diseaseCodes === 'string'
-        ? record.diseaseCodes.split(',').filter((c: string) => c.length > 0)
-        : [];
+      let diseaseCodesArray: string[] = [];
+      try {
+        if (typeof record.diseaseCodes === 'string') {
+          // Check if it looks like a JSON array
+          if (record.diseaseCodes.startsWith('[')) {
+            diseaseCodesArray = JSON.parse(record.diseaseCodes);
+          } else {
+            // Fallback for comma separated just in case
+            diseaseCodesArray = record.diseaseCodes.split(',').filter((c: string) => c.length > 0);
+          }
+        } else if (Array.isArray(record.diseaseCodes)) {
+          diseaseCodesArray = record.diseaseCodes;
+        }
+      } catch (e) {
+        diseaseCodesArray = [];
+      }
 
       const morphTargets = ClinicalToBodyMapper.calculate({
         heightCm: record.heightCm,
