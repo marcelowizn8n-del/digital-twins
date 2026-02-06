@@ -1,0 +1,57 @@
+{
+  "morphTargets": {
+    "Weight": {
+      "index": 0,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "AbdomenGirth": {
+      "index": 1,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "MuscleMass": {
+      "index": 2,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "Posture": {
+      "index": 3,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "DiabetesEffect": {
+      "index": 4,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "HypertensionEffect": {
+      "index": 5,
+      "range": [
+        0,
+        1
+      ]
+    },
+    "HeartDiseaseEffect": {
+      "index": 6,
+      "range": [
+        0,
+        1
+      ]
+    }
+  },
+  "vertexCount": 15626,
+  "faceCount": 28648,
+  "height": 1.7500001192092896,
+  "source": "Professional Base Mesh (Male)"
+}

@@ -16,24 +16,24 @@ function calculateMetabolicSyndrome(
   isOnLipidLowering: boolean
 ): boolean {
   let criteriaCount = 0;
-  
+
   // 1. Cintura aumentada
   if (sex === 'M' && waistCm >= 94) criteriaCount++;
   if (sex === 'F' && waistCm >= 80) criteriaCount++;
-  
+
   // 2. Triglicerídeos elevados (ou em tratamento)
   if (triglyceridesMgDl >= 150 || isOnLipidLowering) criteriaCount++;
-  
+
   // 3. HDL baixo (ou em tratamento)
   if (sex === 'M' && hdlMgDl < 40) criteriaCount++;
   if (sex === 'F' && hdlMgDl < 50) criteriaCount++;
-  
+
   // 4. PA elevada (ou em tratamento)
   if (systolicBp >= 130 || diastolicBp >= 85 || isOnAntihypertensive) criteriaCount++;
-  
+
   // 5. Glicemia elevada (ou em tratamento)
   if (fastingGlucoseMgDl >= 100 || isOnAntidiabetic) criteriaCount++;
-  
+
   return criteriaCount >= 3;
 }
 
@@ -98,7 +98,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 2: Mulher saudável típica (sem SM) =====
   {
     name: 'Maria Ativa',
@@ -157,7 +157,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 3: Homem com SM desenvolvida (perfil da coluna "With MS") =====
   {
     name: 'Roberto Metabólico',
@@ -241,7 +241,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 4: Mulher com progressão para SM =====
   {
     name: 'Ana Progressão',
@@ -325,7 +325,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 5: Homem jovem sedentário em risco =====
   {
     name: 'Carlos Sedentário',
@@ -384,7 +384,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 6: Mulher pós-menopausa com dislipidemia =====
   {
     name: 'Lúcia Dislipidêmica',
@@ -468,7 +468,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 7: Homem com doença cardíaca estabelecida =====
   {
     name: 'Pedro Cardíaco',
@@ -552,7 +552,7 @@ const patientsData = [
       },
     ],
   },
-  
+
   // ===== PERFIL 8: Jovem atleta (referência saudável) =====
   {
     name: 'Bruno Atleta',
@@ -611,6 +611,146 @@ const patientsData = [
       },
     ],
   },
+
+  // ==================================================================================
+  // NOVOS PERFIS BASEADOS NA TABELA 1 DO ESTUDO (MÉDIAS/MEDIANAS)
+  // ==================================================================================
+
+  // ===== TABELA 1: Homem "Sem Síndrome Metabólica" (Medianas) =====
+  {
+    name: 'Estudo: Homem Sem SM',
+    sex: 'M' as const,
+    birthYear: 1976, // Idade ~50
+    records: [
+      {
+        year: 2024,
+        heightCm: 175,
+        weightKg: 77.2, // IMC 25.2
+        waistCm: 92, // Mediana Men No-MetS
+        systolicBp: 112,
+        diastolicBp: 75,
+        triglyceridesMgDl: 94,
+        hdlMgDl: 48, // Estimado M
+        ldlMgDl: 115,
+        totalCholesterolMgDl: 188,
+        fastingGlucoseMgDl: 85,
+        physicalActivityLevel: 'moderate', // 42.3% active
+        smokingStatus: 'never',
+        auditScore: 3,
+        bdiScore: 4,
+        astUL: 26,
+        altUL: 33,
+        ggtUL: 24,
+        isOnAntihypertensive: false,
+        isOnAntidiabetic: false,
+        isOnLipidLowering: false,
+        diseaseCodes: [],
+        notes: 'Perfil representativo: Homem sem síndrome metabólica (Medianas Tabela 1)',
+      },
+    ],
+  },
+
+  // ===== TABELA 1: Mulher "Sem Síndrome Metabólica" (Medianas) =====
+  {
+    name: 'Estudo: Mulher Sem SM',
+    sex: 'F' as const,
+    birthYear: 1976, // Idade ~50
+    records: [
+      {
+        year: 2024,
+        heightCm: 162,
+        weightKg: 66.1, // IMC 25.2
+        waistCm: 78, // Mediana Women No-MetS
+        systolicBp: 112,
+        diastolicBp: 75,
+        triglyceridesMgDl: 94,
+        hdlMgDl: 60, // Estimado F
+        ldlMgDl: 115,
+        totalCholesterolMgDl: 188,
+        fastingGlucoseMgDl: 85,
+        physicalActivityLevel: 'moderate',
+        smokingStatus: 'never',
+        auditScore: 3,
+        bdiScore: 4,
+        astUL: 26,
+        altUL: 33,
+        ggtUL: 24,
+        isOnAntihypertensive: false,
+        isOnAntidiabetic: false,
+        isOnLipidLowering: false,
+        diseaseCodes: [],
+        notes: 'Perfil representativo: Mulher sem síndrome metabólica (Medianas Tabela 1)',
+      },
+    ],
+  },
+
+  // ===== TABELA 1: Homem "Com Síndrome Metabólica" (Medianas) =====
+  {
+    name: 'Estudo: Homem Com SM',
+    sex: 'M' as const,
+    birthYear: 1971, // Idade ~55
+    records: [
+      {
+        year: 2024,
+        heightCm: 175,
+        weightKg: 84.5, // IMC 27.6
+        waistCm: 99, // Mediana Men With-MetS
+        systolicBp: 120, // Mediana (mas 24% usam medicação)
+        diastolicBp: 80,
+        triglyceridesMgDl: 131,
+        hdlMgDl: 43, // Menor HDL
+        ldlMgDl: 121,
+        totalCholesterolMgDl: 192,
+        fastingGlucoseMgDl: 89,
+        physicalActivityLevel: 'low', // Maior inatividade no grupo SM
+        smokingStatus: 'former',
+        auditScore: 3,
+        bdiScore: 4,
+        astUL: 28,
+        altUL: 40,
+        ggtUL: 31,
+        isOnAntihypertensive: true, // 24% prevalencia
+        isOnAntidiabetic: false,
+        isOnLipidLowering: true, // 22.6% prevalencia
+        diseaseCodes: ['I10'], // Hipertensão comum neste grupo
+        notes: 'Perfil representativo: Homem com síndrome metabólica (Medianas Tabela 1)',
+      },
+    ],
+  },
+
+  // ===== TABELA 1: Mulher "Com Síndrome Metabólica" (Medianas) =====
+  {
+    name: 'Estudo: Mulher Com SM',
+    sex: 'F' as const,
+    birthYear: 1971, // Idade ~55
+    records: [
+      {
+        year: 2024,
+        heightCm: 162,
+        weightKg: 72.4, // IMC 27.6
+        waistCm: 89, // Mediana Women With-MetS
+        systolicBp: 120,
+        diastolicBp: 80,
+        triglyceridesMgDl: 131,
+        hdlMgDl: 51, // Menor HDL
+        ldlMgDl: 121,
+        totalCholesterolMgDl: 192,
+        fastingGlucoseMgDl: 89,
+        physicalActivityLevel: 'low',
+        smokingStatus: 'former',
+        auditScore: 3,
+        bdiScore: 4,
+        astUL: 28,
+        altUL: 40,
+        ggtUL: 31,
+        isOnAntihypertensive: true,
+        isOnAntidiabetic: false,
+        isOnLipidLowering: true,
+        diseaseCodes: ['I10'],
+        notes: 'Perfil representativo: Mulher com síndrome metabólica (Medianas Tabela 1)',
+      },
+    ],
+  },
 ];
 
 async function main() {
@@ -620,7 +760,7 @@ async function main() {
   await prisma.patient.deleteMany();
 
   console.log('🌱 Criando pacientes baseados no estudo epidemiológico...');
-  
+
   for (const patientData of patientsData) {
     const patient = await prisma.patient.create({
       data: {
@@ -671,7 +811,7 @@ async function main() {
           isOnAntihypertensive: record.isOnAntihypertensive,
           isOnAntidiabetic: record.isOnAntidiabetic,
           isOnLipidLowering: record.isOnLipidLowering,
-          diseaseCodes: record.diseaseCodes,
+          diseaseCodes: JSON.stringify(record.diseaseCodes), // SQLite doesnt support arrays, storing as JSON string
           notes: record.notes,
         },
       });
@@ -690,7 +830,7 @@ async function main() {
       msStatus.isOnAntidiabetic,
       msStatus.isOnLipidLowering
     );
-    
+
     console.log(`✅ ${patient.name} (${patientData.sex}, ${2026 - patientData.birthYear}a) - SM: ${lastHasMS ? '⚠️ SIM' : '✓ NÃO'}`);
   }
 

@@ -55,16 +55,31 @@ export async function GET() {
       records: patient.records.map((record: any) => {
         const currentYear = new Date().getFullYear();
         const age = currentYear - patient.birthYear;
+        // Parse disease codes once
+        let parsedDiseaseCodes: string[] = [];
+        try {
+          if (typeof record.diseaseCodes === 'string') {
+            parsedDiseaseCodes = JSON.parse(record.diseaseCodes);
+          } else {
+            parsedDiseaseCodes = record.diseaseCodes || [];
+          }
+        } catch (e) {
+          console.error('Error parsing disease codes:', e);
+          parsedDiseaseCodes = [];
+        }
+
         const morphTargets = ClinicalToBodyMapper.calculate({
           heightCm: record.heightCm,
           weightKg: record.weightKg,
           age,
           sex: patient.sex as 'M' | 'F',
-          diseaseCodes: record.diseaseCodes || [],
+          diseaseCodes: parsedDiseaseCodes,
         });
-        return { 
-          ...record, 
+
+        return {
+          ...record,
           morphTargets,
+          diseaseCodes: parsedDiseaseCodes, // Explicitly return array to frontend
           // Garantir que os campos metabólicos estão incluídos
           bmi: record.bmi,
           waistCm: record.waistCm,

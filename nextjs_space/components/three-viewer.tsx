@@ -22,23 +22,15 @@ interface AvatarProps {
   position?: [number, number, number];
 }
 
-// Mapeamento fixo de nomes para índices
-const MORPH_INDEX_MAP: Record<string, number> = {
-  'Weight': 0,
-  'AbdomenGirth': 1,
-  'MuscleMass': 2,
-  'Posture': 3,
-  'DiabetesEffect': 4,
-  'HypertensionEffect': 5,
-  'HeartDiseaseEffect': 6,
-};
+// Mapeamento fixo removido em favor de mesh.morphTargetDictionary dinâmico
+// Isso evita quebras se a ordem dos morph targets mudar no arquivo GLB
 
 function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarProps) {
   const modelPath = sex === 'F' ? '/models/avatar_female.glb' : '/models/avatar_morphable.glb';
   const gltf = useGLTF(modelPath);
   const meshRef = useRef<THREE.Mesh | null>(null);
   const targetValuesRef = useRef<MorphTargets>(morphTargets);
-  
+
   // Atualizar ref quando morphTargets mudar
   useEffect(() => {
     targetValuesRef.current = morphTargets;
@@ -51,45 +43,55 @@ function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarPro
   // CRÍTICO: Clonar a cena para ter uma instância independente
   const clonedScene = useMemo(() => {
     const clone = SkeletonUtils.clone(gltf.scene);
-    
+
     clone.traverse((child) => {
+      // DEBUG: Log mesh names to find head/face components
+      // console.log('DEBUG MESH:', child.name, child.type);
+
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         const geometry = mesh.geometry;
-        
+
+        // Log mesh details
+        console.log(`[Avatar] Mesh Found: ${mesh.name}`);
+
         // Criar novo material
         const skinColor = sex === 'F' ? 0xeee0db : 0xe8d5c8;
-        const newMaterial = new THREE.MeshStandardMaterial({
+
+        // Aplicar material de alta qualidade em TODO o modelo
+        // MeshPhysicalMaterial com Clearcoat dá um aspecto de "boneco de alta tecnologia" ou porcelana
+        // que ajuda a destacar curvas mesmo em modelos com menos detalhes geométricos.
+        const newMaterial = new THREE.MeshPhysicalMaterial({
           color: skinColor,
-          roughness: 0.5,
-          metalness: 0.0,
+          roughness: 0.5, // Pele suave
+          metalness: 0.1, // Leve toque metálico para "tech feel"
+          clearcoat: 0.3, // Camada de verniz suave
+          clearcoatRoughness: 0.2, // Reflexos nítidos
+          reflectivity: 0.5,
           flatShading: false,
           side: THREE.DoubleSide,
         });
-        
+
         mesh.material = newMaterial;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        
+
         // Verificar e configurar morph targets
         const morphPositions = geometry.morphAttributes?.position;
         if (morphPositions && morphPositions.length > 0) {
           mesh.morphTargetInfluences = new Array(morphPositions.length).fill(0);
           meshRef.current = mesh;
-          console.log(`[Avatar] Modelo ${sex} com ${morphPositions.length} morph targets`);
+          // console.log(`[Avatar] Modelo ${sex} com ${morphPositions.length} morph targets`);
         } else if (mesh.morphTargetInfluences && mesh.morphTargetInfluences.length > 0) {
           const numTargets = mesh.morphTargetInfluences.length;
           mesh.morphTargetInfluences = new Array(numTargets).fill(0);
           meshRef.current = mesh;
-          console.log(`[Avatar] Modelo ${sex} com ${numTargets} morph targets (via influences)`);
         } else {
-          // Modelo sem morph targets - ainda assim usar como referência
           meshRef.current = mesh;
-          console.log(`[Avatar] Modelo ${sex} carregado (sem morph targets)`);
         }
       }
     });
-    
+
     return clone;
   }, [gltf.scene, sex]);
 
@@ -102,8 +104,15 @@ function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarPro
     const targets = targetValuesRef.current;
     const lerpFactor = 0.1;
 
+    // Mapeamento dinâmico usando o dicionário do próprio mesh
+    const dictionary = mesh.morphTargetDictionary;
+    if (!dictionary) return;
+
     Object.entries(targets).forEach(([key, value]) => {
-      const index = MORPH_INDEX_MAP[key];
+      // Busca o índice pelo nome do morph target
+      // Nota: Os nomes no GLB devem corresponder às chaves em MorphTargets (Weight, AbdomenGirth, etc)
+      const index = dictionary[key];
+
       if (index !== undefined && index < influences.length) {
         const targetValue = typeof value === 'number' ? Math.max(0, Math.min(1, value)) : 0;
         const currentValue = influences[index];
@@ -122,20 +131,37 @@ function Avatar({ morphTargets, sex, heightCm, position = [0, 0, 0] }: AvatarPro
 function StudioLighting() {
   return (
     <>
-      <directionalLight 
-        position={[2, 4, 4]} 
-        intensity={1.5} 
-        color="#ffffff" 
+      <directionalLight
+        position={[2, 4, 4]}
+        intensity={1.2}
+        color="#ffffff"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-4, 3, 2]} intensity={0.8} color="#f0f5ff" />
-      <directionalLight position={[4, 3, 2]} intensity={0.8} color="#fff5f0" />
-      <directionalLight position={[0, 3, -4]} intensity={0.6} color="#ffffff" />
-      <directionalLight position={[0, 8, 0]} intensity={0.4} color="#ffffff" />
-      <ambientLight intensity={0.7} color="#f8f8f8" />
-      <hemisphereLight args={['#ffffff', '#c0c0c0', 0.5]} />
+      <directionalLight position={[-4, 3, 2]} intensity={0.8} color="#e6f0ff" />
+      <directionalLight position={[4, 3, 2]} intensity={0.8} color="#fff0e6" />
+
+      {/* Luz de Contorno (Rim Light) Azulada Forte para destacar silhueta */}
+      <spotLight
+        position={[0, 4, -4]}
+        intensity={3.0}
+        angle={0.6}
+        penumbra={0.5}
+        color="#00ffff"
+        castShadow
+      />
+      {/* Luz Superior para destacar topo da cabeça */}
+      <spotLight
+        position={[0, 6, 0]}
+        intensity={1.0}
+        angle={0.5}
+        penumbra={1}
+        color="#ffffff"
+      />
+
+      <ambientLight intensity={0.5} color="#ececec" />
+      <hemisphereLight args={['#ffffff', '#333333', 0.4]} />
     </>
   );
 }
@@ -176,16 +202,16 @@ function BackWall() {
 export default function ThreeViewer({ morphTargets, sex, heightCm }: ThreeViewerProps) {
   // Usar key para forçar re-render quando sexo ou altura mudar
   const avatarKey = `avatar-${sex}-${heightCm}`;
-  
+
   // Ajustar câmera target baseado na altura do paciente
   const cameraTargetY = (heightCm / 100) * 0.5; // Metade da altura em metros
-  
+
   return (
     <div className="w-full h-full min-h-[500px] bg-gradient-to-b from-gray-300 to-gray-400 rounded-lg overflow-hidden">
-      <Canvas 
-        shadows 
+      <Canvas
+        shadows
         camera={{ fov: 40, near: 0.1, far: 100 }}
-        gl={{ 
+        gl={{
           antialias: true,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.2,

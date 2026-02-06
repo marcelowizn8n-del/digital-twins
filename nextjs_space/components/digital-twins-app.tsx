@@ -155,13 +155,13 @@ export default function DigitalTwinsApp() {
   const currentRecordData = useMemo(() => {
     const records = selectedPatient?.records ?? [];
     if (records.length === 0) return null;
-    
+
     if (records.length === 1) return records[0];
-    
+
     // Encontrar registros para interpolação
     let startRecord = records[0];
     let endRecord = records[records.length - 1];
-    
+
     for (let i = 0; i < records.length - 1; i++) {
       if (records[i]?.year <= currentYear && records[i + 1]?.year >= currentYear) {
         startRecord = records[i];
@@ -169,12 +169,12 @@ export default function DigitalTwinsApp() {
         break;
       }
     }
-    
+
     if (currentYear <= startRecord.year) return startRecord;
     if (currentYear >= endRecord.year) return endRecord;
-    
+
     const t = (currentYear - startRecord.year) / (endRecord.year - startRecord.year);
-    
+
     return {
       ...startRecord,
       year: currentYear,
@@ -196,41 +196,47 @@ export default function DigitalTwinsApp() {
 
   // Morph targets finais (com simulação se ativa)
   const finalMorphTargets = useMemo(() => {
-    const baseMorphTargets = currentRecordData?.morphTargets ?? defaultMorphTargets;
-    
-    if (!simulationMode) return baseMorphTargets;
-    
-    // Aplicar simulação com escala proporcional
-    // simulatedWeight/Abdomen vai de -0.3 a +0.3
-    // Se negativo: reduz proporcionalmente o valor atual
-    // Se positivo: aumenta proporcionalmente em direção a 1.0
-    const applySimulation = (baseValue: number, delta: number) => {
-      if (delta < 0) {
-        // Perda: reduz proporcionalmente (delta=-0.3 → reduz 30% do valor atual)
-        return Math.max(0, baseValue * (1 + delta));
-      } else {
-        // Ganho: aumenta em direção a 1.0 (delta=+0.3 → aumenta 30% do espaço restante)
-        const remaining = 1 - baseValue;
-        return Math.min(1, baseValue + remaining * delta);
-      }
-    };
-    
-    return {
-      ...baseMorphTargets,
-      Weight: applySimulation(baseMorphTargets.Weight, simulatedWeight),
-      AbdomenGirth: applySimulation(baseMorphTargets.AbdomenGirth, simulatedAbdomen),
-      // Perda de peso também afeta massa muscular positivamente
-      MuscleMass: Math.max(0, Math.min(1, baseMorphTargets.MuscleMass + (simulatedWeight < 0 ? Math.abs(simulatedWeight) * 0.3 : -simulatedWeight * 0.2))),
-    };
-  }, [currentRecordData, simulationMode, simulatedWeight, simulatedAbdomen]);
+    // Se não houver dados, retorna padrão
+    if (!currentRecordData || !selectedPatient) return defaultMorphTargets;
+
+    // Se não estiver em modo simulação, usa os calculados no registro
+    if (!simulationMode) return currentRecordData.morphTargets ?? defaultMorphTargets;
+
+    // EM MODO SIMULAÇÃO: Recalcular do zero com os novos dados
+    // simulatedWeight é um fator percentual negativo (ex: -0.1 para 10% de perda)
+    const currentWeight = currentRecordData.weightKg;
+    const currentWaist = currentRecordData.waistCm;
+
+    // Calcular novos valores clínicos
+    const simulatedNewWeight = currentWeight * (1 + simulatedWeight);
+
+    // Estimativa: cintura reduz na mesma proporção do peso (aproximação)
+    const simulatedNewWaist = currentWaist ? currentWaist * (1 + simulatedAbdomen) : undefined;
+
+    // Idade atual
+    const age = new Date().getFullYear() - selectedPatient.birthYear;
+
+    // Recalcular usando o Mapper oficial para garantir consistência
+    const recalculatedMorphs = ClinicalToBodyMapper.calculate({
+      heightCm: currentRecordData.heightCm,
+      weightKg: simulatedNewWeight,
+      age: age,
+      sex: selectedPatient.sex as 'M' | 'F',
+      diseaseCodes: currentRecordData.diseaseCodes || [],
+      waistCm: simulatedNewWaist,
+      physicalActivityLevel: currentRecordData.physicalActivityLevel || 'moderate'
+    });
+
+    return recalculatedMorphs;
+  }, [currentRecordData, selectedPatient, simulationMode, simulatedWeight, simulatedAbdomen]);
 
   // Calcular mudança desde baseline
   const changeFromBaseline = useMemo(() => {
     if (!baselineRecord || !currentRecordData) return null;
-    
+
     const weightChange = currentRecordData.weightKg - baselineRecord.weightKg;
     const weightPct = (weightChange / baselineRecord.weightKg) * 100;
-    
+
     return {
       weightKg: weightChange,
       weightPct,
@@ -278,7 +284,7 @@ export default function DigitalTwinsApp() {
               selectedPatientId={selectedPatientId}
               onSelectPatient={setSelectedPatientId}
             />
-            
+
             {selectedPatient && (
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -332,7 +338,7 @@ export default function DigitalTwinsApp() {
               <TabsTrigger value="dados" className="flex-1">Dados Clínicos</TabsTrigger>
               <TabsTrigger value="simulacao" className="flex-1">Simulação</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="dados" className="space-y-4 mt-4">
               {/* Valores Absolutos */}
               <Card>
@@ -348,20 +354,19 @@ export default function DigitalTwinsApp() {
                     <div className="text-right">
                       <div className="text-xl font-bold">{currentRecordData?.weightKg?.toFixed(1) ?? '--'} kg</div>
                       {changeFromBaseline && (
-                        <div className={`text-sm flex items-center gap-1 justify-end ${
-                          changeFromBaseline.weightKg > 0 ? 'text-red-600' : 
-                          changeFromBaseline.weightKg < 0 ? 'text-green-600' : 'text-gray-500'
-                        }`}>
-                          {changeFromBaseline.weightKg > 0 ? <TrendingUp className="w-4 h-4" /> : 
-                           changeFromBaseline.weightKg < 0 ? <TrendingDown className="w-4 h-4" /> : 
-                           <Minus className="w-4 h-4" />}
-                          {changeFromBaseline.weightKg > 0 ? '+' : ''}{changeFromBaseline.weightKg.toFixed(1)} kg 
+                        <div className={`text-sm flex items-center gap-1 justify-end ${changeFromBaseline.weightKg > 0 ? 'text-red-600' :
+                            changeFromBaseline.weightKg < 0 ? 'text-green-600' : 'text-gray-500'
+                          }`}>
+                          {changeFromBaseline.weightKg > 0 ? <TrendingUp className="w-4 h-4" /> :
+                            changeFromBaseline.weightKg < 0 ? <TrendingDown className="w-4 h-4" /> :
+                              <Minus className="w-4 h-4" />}
+                          {changeFromBaseline.weightKg > 0 ? '+' : ''}{changeFromBaseline.weightKg.toFixed(1)} kg
                           ({changeFromBaseline.weightPct > 0 ? '+' : ''}{changeFromBaseline.weightPct.toFixed(1)}%)
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Ruler className="w-5 h-5 text-green-600" />
@@ -369,7 +374,7 @@ export default function DigitalTwinsApp() {
                     </div>
                     <div className="text-xl font-bold">{currentRecordData?.heightCm?.toFixed(0) ?? '--'} cm</div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Activity className="w-5 h-5 text-purple-600" />
@@ -420,19 +425,19 @@ export default function DigitalTwinsApp() {
                         </span>
                       </div>
                       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className={`h-full bg-${color}-500 transition-all duration-500`}
-                          style={{ 
+                          style={{
                             width: `${(finalMorphTargets[key as keyof MorphTargets] ?? 0) * 100}%`,
-                            backgroundColor: color === 'blue' ? '#3b82f6' : 
-                                           color === 'orange' ? '#f97316' : 
-                                           color === 'green' ? '#22c55e' : '#8b5cf6'
+                            backgroundColor: color === 'blue' ? '#3b82f6' :
+                              color === 'orange' ? '#f97316' :
+                                color === 'green' ? '#22c55e' : '#8b5cf6'
                           }}
                         />
                       </div>
                     </div>
                   ))}
-                  
+
                   {/* Efeitos de Doenças */}
                   {(finalMorphTargets.DiabetesEffect > 0 || finalMorphTargets.HypertensionEffect > 0 || finalMorphTargets.HeartDiseaseEffect > 0) && (
                     <div className="pt-2 border-t mt-2">
@@ -470,7 +475,7 @@ export default function DigitalTwinsApp() {
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="simulacao" className="space-y-4 mt-4">
               {/* Simulador What-If Avançado */}
               {currentRecordData?.id && selectedPatient && (
@@ -489,7 +494,7 @@ export default function DigitalTwinsApp() {
                   }}
                 />
               )}
-              
+
               {/* Simulação Visual do Avatar */}
               <Card>
                 <CardHeader className="pb-2">
@@ -508,7 +513,7 @@ export default function DigitalTwinsApp() {
                       {simulationMode ? 'Desativar Visualização' : 'Ativar Visualização'}
                     </Button>
                   </div>
-                  
+
                   {simulationMode && (
                     <>
                       <div className="space-y-3">
@@ -531,7 +536,7 @@ export default function DigitalTwinsApp() {
                           <span>Ganhar peso</span>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-3">
                         <div className="flex justify-between">
                           <label className="text-sm font-medium">Circunferência Abdominal</label>
@@ -552,7 +557,7 @@ export default function DigitalTwinsApp() {
                           <span>Aumentar</span>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -598,9 +603,9 @@ export default function DigitalTwinsApp() {
 
         {/* Coluna central - Visualizador 3D */}
         <div className="lg:col-span-1 h-[500px] lg:h-[600px]">
-          <ViewerLoader 
-            morphTargets={finalMorphTargets} 
-            sex={selectedPatient?.sex || 'M'} 
+          <ViewerLoader
+            morphTargets={finalMorphTargets}
+            sex={selectedPatient?.sex || 'M'}
             heightCm={currentRecordData?.heightCm || 170}
           />
         </div>
@@ -637,13 +642,12 @@ export default function DigitalTwinsApp() {
             <CardContent>
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
                 {selectedPatient?.records?.map((record, idx) => (
-                  <div 
+                  <div
                     key={record.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      record.year === currentYear 
-                        ? 'bg-blue-50 border-blue-300' 
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${record.year === currentYear
+                        ? 'bg-blue-50 border-blue-300'
                         : 'bg-white hover:bg-gray-50'
-                    }`}
+                      }`}
                     onClick={() => setCurrentYear(record.year)}
                   >
                     <div className="flex justify-between items-center">
@@ -699,7 +703,7 @@ export default function DigitalTwinsApp() {
                   <div>
                     <h4 className="font-semibold text-gray-800">Algoritmo de Mapeamento</h4>
                     <p className="text-gray-600">
-                      Conversão de parâmetros clínicos (IMC, códigos CID-10) 
+                      Conversão de parâmetros clínicos (IMC, códigos CID-10)
                       para deformações morfológicas baseadas em evidências.
                     </p>
                   </div>

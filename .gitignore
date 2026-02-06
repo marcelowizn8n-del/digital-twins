@@ -18,3 +18,8 @@ out
 .deploy
 .logs
 *.tsbuildinfo
+
+# Local Netxjs
+.env
+*.db
+*.sqlite
