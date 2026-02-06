@@ -47,6 +47,8 @@ export class ClinicalToBodyMapper {
   static calculate(input: PatientInput): MorphTargets {
     const heightM = input.heightCm / 100;
     const bmi = input.weightKg / (heightM * heightM);
+    // IMC 18.5 = 0%, IMC 60 = 100%
+    const normalizedBMI = this.normalize(bmi, this.BMI_MIN, this.BMI_MAX);
 
     // === WEIGHT: BMI Tiered Morphing ===
     // Refined logic for visual accuracy:

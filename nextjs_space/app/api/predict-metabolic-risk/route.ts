@@ -13,6 +13,33 @@ const NCEP_CRITERIA = {
   glucose: 100,
 };
 
+interface ClinicalFeatures {
+  bmi: number;
+  waistCm: number;
+  systolicBp: number;
+  diastolicBp: number;
+  triglyceridesMgDl: number;
+  hdlMgDl: number;
+  fastingGlucoseMgDl: number;
+  age: number;
+  sex: string;
+  physicalActivityLevel?: string;
+  isOnAntihypertensive?: boolean;
+  isOnAntidiabetic?: boolean;
+  isOnLipidLowering?: boolean;
+}
+
+interface RiskFactor {
+  feature: string;
+  featureLabel: string;
+  direction: 'increase' | 'decrease';
+  impact: 'high' | 'medium' | 'low';
+  contribution: number;
+  currentValue: number;
+  threshold: number;
+  unit: string;
+}
+
 function calculateMetabolicRisk(features: ClinicalFeatures): {
   riskProbability: number;
   criteriaCount: number;
