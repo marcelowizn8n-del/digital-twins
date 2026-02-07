@@ -108,6 +108,9 @@ fi
 echo ""
 echo -e "${YELLOW}📦 Syncing files to VPS...${NC}"
 
+# Ensure remote directory exists
+ssh -i "$SSH_KEY" "$VPS_USER@$VPS_HOST" "mkdir -p $VPS_PATH/nextjs_space"
+
 # Navigate to nextjs_space directory
 cd "$(dirname "$0")/../nextjs_space" || exit 1
 
