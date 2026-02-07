@@ -55,6 +55,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
+# Install prisma and tsx locally for seeding/migrations as they are not included in standalone
+RUN npm install prisma@6.7.0 tsx --no-save
+
 USER nextjs
 
 EXPOSE 3000

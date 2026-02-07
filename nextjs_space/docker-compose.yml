@@ -17,4 +17,5 @@ services:
       - ./has_db:/app/db_data
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
-    command: sleep infinity
+    command: >
+      sh -c "npx prisma@6.7.0 db push --accept-data-loss && node server.js"
