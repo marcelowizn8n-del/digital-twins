@@ -21,6 +21,8 @@ COPY . .
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
+# Placeholder for build-time prisma generation
+ENV DATABASE_URL="file:./dev.db"
 
 # Generate Prisma Client
 RUN npx prisma generate

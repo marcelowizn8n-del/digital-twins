@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "chmod -R +x node_modules/.bin/prisma node_modules/@prisma/engines || true && npx prisma generate && npx prisma db push && npx prisma db seed && next build && cp -r public .next/standalone/ && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/ && cp -r prisma .next/standalone/ && chmod -R +x .next/standalone/node_modules || true",
+    "build": "npx prisma generate && next build",
     "start": "node .next/standalone/server.js",
     "lint": "next lint",
     "postinstall": "prisma generate"
@@ -17,8 +17,8 @@
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
     "@types/three": "^0",
-    "@typescript-eslint/eslint-plugin": "7.0.0",
-    "@typescript-eslint/parser": "7.0.0",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
     "eslint": "8.56.0",
     "eslint-config-next": "14.1.0",
     "eslint-plugin-prettier": "5.1.3",
