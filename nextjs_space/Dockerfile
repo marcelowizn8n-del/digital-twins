@@ -35,10 +35,10 @@ ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN adduser --system --uid 1001 --ingroup nodejs nextjs
 
 # Create database directory with correct permissions
-RUN mkdir -p /app/db_data && chown nextjs:nodejs /app/db_data && chmod 777 /app/db_data
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data && chmod 777 /app/data
 
 COPY --from=builder /app/public ./public
 

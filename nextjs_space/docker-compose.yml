@@ -10,12 +10,14 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - DATABASE_URL=file:/app/db_data/prod.db
+      - DATABASE_URL=file:/app/data/prod.db
       - NEXT_PUBLIC_API_URL=http://localhost:3001
     volumes:
-      # Persist SQLite database
-      - ./has_db:/app/db_data
+      - digital_twins_db:/app/data
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
       sh -c "npx prisma@6.7.0 db push --accept-data-loss && node server.js"
+
+volumes:
+  digital_twins_db:
