@@ -92,7 +92,7 @@ echo ""
 echo -e "${YELLOW}🔐 Testing SSH connection...${NC}"
 echo "Note: If your key has a passphrase, you will be prompted now."
 
-if ssh -i "$SSH_KEY" -o ConnectTimeout=10 "$VPS_USER@$VPS_HOST" "echo 'Connection successful'" 2>/dev/null; then
+if ssh -i "$SSH_KEY" -o ConnectTimeout=10 "$VPS_USER@$VPS_HOST" "echo 'Connection successful'"; then
     echo -e "${GREEN}✓${NC} SSH connection successful"
 else
     echo -e "${RED}✗${NC} SSH connection failed"
