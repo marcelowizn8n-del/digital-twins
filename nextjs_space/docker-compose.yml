@@ -11,13 +11,21 @@ services:
       - "3002:3000"
     environment:
       - DATABASE_URL=file:/app/data/prod.db
-      - NEXT_PUBLIC_API_URL=http://localhost:3002
+      - NEXT_PUBLIC_API_URL=https://digitaltwin.dttools.app
     volumes:
       - digital_twins_db:/app/data
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
       sh -c "npx prisma@6.7.0 db push --accept-data-loss --skip-generate && node server.js"
+    networks:
+      - default
+      - easypanel
 
 volumes:
   digital_twins_db:
+
+
+networks:
+  easypanel:
+    external: true
