@@ -50,8 +50,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy necessary prisma files for migration/seeding if needed in production
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-# Copy .env if it exists, but typically env vars are passed at runtime
-# COPY .env ./ 
+
+# Install tsx globally in the runner for seeding if needed (lightweight)
+RUN npm install -g tsx prisma@6.7.0
 
 USER nextjs
 

@@ -10,11 +10,11 @@ services:
     ports:
       - "3001:3000"
     environment:
-      - DATABASE_URL=file:/app/prisma/prod.db
+      - DATABASE_URL=file:/app/db_data/prod.db
       - NEXT_PUBLIC_API_URL=http://localhost:3001
-    # volumes:
-    #   # Persist SQLite database
-    #   - ./has_db:/app/db
+    volumes:
+      # Persist SQLite database
+      - ./has_db:/app/db_data
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
