@@ -8,10 +8,10 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - DATABASE_URL=file:/app/db/prod.db
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
     volumes:
       # Persist SQLite database
       - ./has_db:/app/db
