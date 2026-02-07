@@ -24,3 +24,6 @@ out
 *.db
 *.sqlite
 yarn.lock
+
+# Deployment credentials
+scripts/.deploy-config

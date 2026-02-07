@@ -10,6 +10,10 @@ export interface PatientInput {
   // Dados opcionais para maior fidelidade
   waistCm?: number;
   physicalActivityLevel?: string;
+  // Bioimpedance Data (0-100 scale for %)
+  bioImpedanceFat?: number;      // Body Fat %
+  bioImpedanceMuscle?: number;   // Muscle Mass % or kg (We'll treat as % if > 20, else kg and convert)
+  bioImpedanceVisceral?: number; // Visceral Fat Rating (1-59)
 }
 
 export interface MorphTargets {
@@ -50,32 +54,66 @@ export class ClinicalToBodyMapper {
     // IMC 18.5 = 0%, IMC 60 = 100%
     const normalizedBMI = this.normalize(bmi, this.BMI_MIN, this.BMI_MAX);
 
-    // === WEIGHT: BMI Tiered Morphing ===
-    // Refined logic for visual accuracy:
-    // Tier 1 (BMI < 25): Linear sensitivity (Show every kg)
-    // Tier 2 (BMI 25-35): Power Curve (Focus on abdominal accumulation)
-    // Tier 3 (BMI > 35): Logarithmic Saturation (Model limits)
-
+    // === WEIGHT: BMI vs Bioimpedance ===
     let weightModifier = 0;
 
-    if (bmi < 25) {
-      // Linear mapping for normal weight to show nuances
-      weightModifier = this.normalize(bmi, 15, 25) * 0.3; // Maps 15-25 to 0.0-0.3
-    } else if (bmi < 35) {
-      // Overweight/Obese I: Accelerated abdominal gain
-      // Maps 25-35 to 0.3-0.7
-      const t = this.normalize(bmi, 25, 35);
-      weightModifier = 0.3 + (Math.pow(t, 0.8) * 0.4);
+    if (input.bioImpedanceFat !== undefined && input.bioImpedanceFat > 0) {
+      // PRECISÃO: Usar % de Gordura Real
+      // Homens: Essencial 2-5%, Atleta 6-13%, Fitness 14-17%, Médio 18-24%, Obeso 25%+
+      // Mulheres: Essencial 10-13%, Atleta 14-20%, Fitness 21-24%, Médio 25-31%, Obeso 32%+
+
+      const fat = input.bioImpedanceFat;
+      let targetFatMin = 10;
+      let targetFatMax = 50; // 50% de gordura é muito alto (obesidade mórbida)
+
+      if (input.sex === 'M') {
+        targetFatMin = 5;
+        targetFatMax = 40;
+      } else {
+        targetFatMin = 15;
+        targetFatMax = 50;
+      }
+
+      weightModifier = this.normalize(fat, targetFatMin, targetFatMax);
+
     } else {
-      // Obese II/III: Saturation
-      // Maps 35-60 to 0.7-1.0
-      const t = this.normalize(bmi, 35, 60);
-      weightModifier = 0.7 + (Math.log10(1 + t * 9) / 1) * 0.3; // Log curve
+      // FALLBACK: Usar BMI
+      if (bmi < 25) {
+        // Linear mapping for normal weight to show nuances
+        weightModifier = this.normalize(bmi, 15, 25) * 0.3; // Maps 15-25 to 0.0-0.3
+      } else if (bmi < 35) {
+        // Overweight/Obese I: Accelerated abdominal gain
+        // Maps 25-35 to 0.3-0.7
+        const t = this.normalize(bmi, 25, 35);
+        weightModifier = 0.3 + (Math.pow(t, 0.8) * 0.4);
+      } else {
+        // Obese II/III: Saturation
+        // Maps 35-60 to 0.7-1.0
+        const t = this.normalize(bmi, 35, 60);
+        weightModifier = 0.7 + (Math.log10(1 + t * 9) / 1) * 0.3; // Log curve
+      }
     }
 
-    // === ABDOMEN: Uses REAL Waist or Estimated ===
+    // === ABDOMEN: Visceral Fat vs Waist vs BMI ===
     let abdomenModifier: number;
-    if (input.waistCm) {
+
+    if (input.bioImpedanceVisceral !== undefined && input.bioImpedanceVisceral > 0) {
+      // PRECISÃO MÁXIMA: Gordura Visceral (Rating 1-59)
+      // 1-12: Saudável
+      // 13-59: Excessivo (Barriga proeminente)
+
+      const visceral = input.bioImpedanceVisceral;
+      // Normalizar: 1 (min) a 20 (muito alto)
+      // Mapear 1-10 -> 0.0 - 0.4 (barriga liza/normal)
+      // Mapear 10-20 -> 0.4 - 1.0 (barriga globosa)
+
+      if (visceral <= 10) {
+        abdomenModifier = this.normalize(visceral, 1, 10) * 0.4;
+      } else {
+        abdomenModifier = 0.4 + this.normalize(visceral, 10, 25) * 0.6;
+      }
+
+    } else if (input.waistCm) {
       const waistMin = input.sex === 'M' ? this.WAIST_MIN_M : this.WAIST_MIN_F;
       const waistMax = input.sex === 'M' ? this.WAIST_MAX_M : this.WAIST_MAX_F;
 
@@ -94,9 +132,28 @@ export class ClinicalToBodyMapper {
       abdomenModifier = weightModifier * 0.9;
     }
 
-    // === MUSCLE MASS: Baseado em atividade física (Ajustado pelo BMI) ===
+    // === MUSCLE MASS: Bioimpedance vs Activity ===
     let muscleModifier = 0.25;
-    if (input.physicalActivityLevel) {
+
+    if (input.bioImpedanceMuscle !== undefined && input.bioImpedanceMuscle > 0) {
+      // PRECISÃO: Massa Muscular
+      // Pode vir em % ou KG. Tentar inferir.
+      let musclePercent = input.bioImpedanceMuscle;
+
+      // Se for > 60 provavelmente é KG (assumindo pessoa média), mas em % seria impossível para a maioria.
+      // Vamos assumir que se for > 55 é KG e converter para % aproximada
+      if (musclePercent > 55) {
+        musclePercent = (input.bioImpedanceMuscle / input.weightKg) * 100;
+      }
+
+      // Homem: 30-40% Normal, 40-50% Alto, 50%+ Atleta
+      // Mulher: 25-30% Normal, 30-35% Alto, 35%+ Atleta
+      let minMus = 30, maxMus = 50;
+      if (input.sex === 'F') { minMus = 25; maxMus = 40; }
+
+      muscleModifier = this.normalize(musclePercent, minMus, maxMus);
+
+    } else if (input.physicalActivityLevel) {
       switch (input.physicalActivityLevel) {
         case 'sedentary': muscleModifier = 0.1; break;
         case 'light': muscleModifier = 0.2; break;
@@ -104,9 +161,13 @@ export class ClinicalToBodyMapper {
         case 'active': muscleModifier = 0.55; break;
         case 'very_active': muscleModifier = 0.75; break;
       }
+      // Efeito de "esconder" músculo sob gordura (visualmente)
+      muscleModifier = muscleModifier * (1 - Math.min(0.5, normalizedBMI * 0.5));
+    } else {
+      // Default fallback
+      muscleModifier = 0.25 * (1 - Math.min(0.5, normalizedBMI * 0.5));
     }
-    // Efeito de "esconder" músculo sob gordura (visualmente)
-    muscleModifier = muscleModifier * (1 - Math.min(0.5, normalizedBMI * 0.5));
+
 
     // === POSTURE: Baseado na idade ===
     let postureModifier = 0;
@@ -123,17 +184,18 @@ export class ClinicalToBodyMapper {
       switch (code) {
         case 'E11': // Diabetes Type 2
           diabetesEffect = 0.4;
-          abdomenModifier = Math.min(1, abdomenModifier + 0.1);
-          weightModifier = Math.min(1, weightModifier + 0.05);
+          // Se não usou bioimpedância, ajustar estimativas
+          if (!input.bioImpedanceVisceral) abdomenModifier = Math.min(1, abdomenModifier + 0.1);
+          if (!input.bioImpedanceFat) weightModifier = Math.min(1, weightModifier + 0.05);
           break;
         case 'I10': // Hipertensão
           hypertensionEffect = 0.35;
-          weightModifier = Math.min(1, weightModifier + 0.04);
+          if (!input.bioImpedanceFat) weightModifier = Math.min(1, weightModifier + 0.04);
           break;
         case 'I25': // Doença cardíaca
           heartDiseaseEffect = 0.4;
           postureModifier = Math.min(1, postureModifier + 0.15);
-          muscleModifier = Math.max(0, muscleModifier - 0.08);
+          if (!input.bioImpedanceMuscle) muscleModifier = Math.max(0, muscleModifier - 0.08);
           break;
       }
     }

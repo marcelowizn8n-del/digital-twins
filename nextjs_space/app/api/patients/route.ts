@@ -74,6 +74,9 @@ export async function GET() {
           age,
           sex: patient.sex as 'M' | 'F',
           diseaseCodes: parsedDiseaseCodes,
+          bioImpedanceFat: record.bioImpedanceFat,
+          bioImpedanceMuscle: record.bioImpedanceMuscle,
+          bioImpedanceVisceral: record.bioImpedanceVisceral,
         });
 
         return {
