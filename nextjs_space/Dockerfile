@@ -37,6 +37,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Create database directory with correct permissions
+RUN mkdir -p /app/db_data && chown nextjs:nodejs /app/db_data && chmod 777 /app/db_data
+
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
@@ -47,12 +50,10 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
 # Copy necessary prisma files for migration/seeding if needed in production
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-
-# Install tsx globally in the runner for seeding if needed (lightweight)
-RUN npm install -g tsx prisma@6.7.0
 
 USER nextjs
 
