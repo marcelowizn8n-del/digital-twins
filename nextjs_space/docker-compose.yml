@@ -18,4 +18,4 @@ services:
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
-      sh -c "npx prisma@6.7.0 db push --accept-data-loss && npx prisma@6.7.0 db seed && node server.js"
+      sh -c "npx prisma@6.7.0 db push --accept-data-loss && node server.js"
