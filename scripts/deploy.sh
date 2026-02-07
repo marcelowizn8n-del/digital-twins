@@ -90,7 +90,9 @@ fi
 # Step 2: Test SSH connection
 echo ""
 echo -e "${YELLOW}🔐 Testing SSH connection...${NC}"
-if ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o BatchMode=yes "$VPS_USER@$VPS_HOST" "echo 'Connection successful'" 2>/dev/null; then
+echo "Note: If your key has a passphrase, you will be prompted now."
+
+if ssh -i "$SSH_KEY" -o ConnectTimeout=10 "$VPS_USER@$VPS_HOST" "echo 'Connection successful'" 2>/dev/null; then
     echo -e "${GREEN}✓${NC} SSH connection successful"
 else
     echo -e "${RED}✗${NC} SSH connection failed"
@@ -98,6 +100,7 @@ else
     echo "  1. VPS is running and accessible"
     echo "  2. SSH key is correct and authorized on the VPS"
     echo "  3. Hostname/IP is correct"
+    echo "  4. Passphrase (if any) is correct"
     exit 1
 fi
 
@@ -123,7 +126,7 @@ echo -e "${GREEN}✓${NC} Files synced successfully"
 echo ""
 echo -e "${YELLOW}🐳 Deploying on VPS...${NC}"
 
-ssh -i "$SSH_KEY" "$VPS_USER@$VPS_HOST" << 'ENDSSH'
+ssh -i "$SSH_KEY" "$VPS_USER@$VPS_HOST" << ENDSSH
 set -e
 cd "$VPS_PATH/nextjs_space" || exit 1
 
