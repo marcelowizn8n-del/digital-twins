@@ -875,7 +875,7 @@ async function main() {
   const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Almeida', 'Lopes', 'Soares', 'Fernandes', 'Vieira', 'Barbosa', 'Rocha', 'Dias', 'Nascimento', 'Andrade', 'Moreira', 'Nunes', 'Marques', 'Machado', 'Mendes', 'Freitas'];
 
   const templates = patientsData.slice(-4); // Usar os últimos 4 perfis (Estudo) como base
-  const TOTAL_TO_GENERATE = 42;
+  const TOTAL_TO_GENERATE = 148; // 12 manuais + 148 sintéticos = 160 total
 
   console.log(`\n🎲 Gerando mais ${TOTAL_TO_GENERATE} pacientes sintéticos variados...`);
 
