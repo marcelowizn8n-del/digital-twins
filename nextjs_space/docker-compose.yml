@@ -17,7 +17,7 @@ services:
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
-      sh -c "mkdir -p /app/prisma/data && npx prisma@6.7.0 db push --accept-data-loss --skip-generate && node server.js"
+      sh -c "mkdir -p /app/prisma/data && chown -R nextjs:nodejs /app/prisma/data && chmod -R 777 /app/prisma/data && npx prisma@6.7.0 db push --accept-data-loss --skip-generate && node server.js"
     networks:
       - default
       - easypanel
