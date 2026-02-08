@@ -10,14 +10,14 @@ services:
     ports:
       - "3002:3000"
     environment:
-      - DATABASE_URL=file:/app/data/prod.db
+      - DATABASE_URL=file:/app/prisma/data/prod.db
       - NEXT_PUBLIC_API_URL=https://digitaltwin.dttools.app
     volumes:
-      - digital_twins_db:/app/data
+      - digital_twins_db:/app/prisma/data
     # Run migrations before starting access to app not strictly necessary if handled elsewhere 
     # but good for standalone generic use
     command: >
-      sh -c "echo \"DATABASE_URL=file:/app/data/prod.db\" > .env && npx prisma@6.7.0 db push --accept-data-loss --skip-generate && node server.js"
+      sh -c "mkdir -p /app/prisma/data && npx prisma@6.7.0 db push --accept-data-loss --skip-generate && node server.js"
     networks:
       - default
       - easypanel
