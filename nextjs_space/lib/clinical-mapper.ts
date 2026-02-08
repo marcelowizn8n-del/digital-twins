@@ -77,20 +77,26 @@ export class ClinicalToBodyMapper {
       weightModifier = this.normalize(fat, targetFatMin, targetFatMax);
 
     } else {
-      // FALLBACK: Usar BMI
-      if (bmi < 25) {
-        // Linear mapping for normal weight to show nuances
-        weightModifier = this.normalize(bmi, 15, 25) * 0.3; // Maps 15-25 to 0.0-0.3
-      } else if (bmi < 35) {
-        // Overweight/Obese I: Accelerated abdominal gain
-        // Maps 25-35 to 0.3-0.7
-        const t = this.normalize(bmi, 25, 35);
-        weightModifier = 0.3 + (Math.pow(t, 0.8) * 0.4);
+      // FALLBACK: Usar BMI com mapeamento não-linear avançado
+      // A maioria das pessoas tem IMC entre 20 e 40.
+      if (bmi < 18.5) {
+        // Abaixo do peso: 0 a 0.05
+        weightModifier = this.normalize(bmi, 15, 18.5) * 0.05;
+      } else if (bmi < 25) {
+        // Peso Normal: 0.05 a 0.2
+        weightModifier = 0.05 + this.normalize(bmi, 18.5, 25) * 0.15;
+      } else if (bmi < 30) {
+        // Sobrepeso: 0.2 a 0.45 (Crescimento mais rápido)
+        const t = this.normalize(bmi, 25, 30);
+        weightModifier = 0.2 + (Math.pow(t, 1.2) * 0.25);
+      } else if (bmi < 40) {
+        // Obesidade I/II: 0.45 a 0.8
+        const t = this.normalize(bmi, 30, 40);
+        weightModifier = 0.45 + (Math.pow(t, 0.8) * 0.35);
       } else {
-        // Obese II/III: Saturation
-        // Maps 35-60 to 0.7-1.0
-        const t = this.normalize(bmi, 35, 60);
-        weightModifier = 0.7 + (Math.log10(1 + t * 9) / 1) * 0.3; // Log curve
+        // Obesidade III: Saturação 0.8 a 1.0 (Logarítmica para evitar "estouro")
+        const t = this.normalize(bmi, 40, 60);
+        weightModifier = 0.8 + (Math.log10(1 + t * 9) / 1) * 0.2;
       }
     }
 
@@ -99,18 +105,23 @@ export class ClinicalToBodyMapper {
 
     if (input.bioImpedanceVisceral !== undefined && input.bioImpedanceVisceral > 0) {
       // PRECISÃO MÁXIMA: Gordura Visceral (Rating 1-59)
-      // 1-12: Saudável
-      // 13-59: Excessivo (Barriga proeminente)
+      // 1-9: Saudável
+      // 10-14: Alto
+      // 15+: Muito Alto (Forte indicação de Síndrome Metabólica)
 
       const visceral = input.bioImpedanceVisceral;
-      // Normalizar: 1 (min) a 20 (muito alto)
-      // Mapear 1-10 -> 0.0 - 0.4 (barriga liza/normal)
-      // Mapear 10-20 -> 0.4 - 1.0 (barriga globosa)
 
-      if (visceral <= 10) {
-        abdomenModifier = this.normalize(visceral, 1, 10) * 0.4;
+      if (visceral <= 9) {
+        // Progressão linear suave para perfis saudáveis
+        abdomenModifier = this.normalize(visceral, 1, 9) * 0.35;
+      } else if (visceral <= 15) {
+        // Ganho acelerado (barriga globosa/visceral)
+        const t = this.normalize(visceral, 9, 15);
+        abdomenModifier = 0.35 + (Math.pow(t, 0.7) * 0.35); // Chega a 0.7
       } else {
-        abdomenModifier = 0.4 + this.normalize(visceral, 10, 25) * 0.6;
+        // Saturação em níveis críticos
+        const t = this.normalize(visceral, 15, 30);
+        abdomenModifier = 0.7 + (Math.min(1, t) * 0.3);
       }
 
     } else if (input.waistCm) {
@@ -120,16 +131,15 @@ export class ClinicalToBodyMapper {
       const normalizedWaist = this.normalize(input.waistCm, waistMin, waistMax);
 
       // Cintura reage mais rápido que o peso geral em SM
-      abdomenModifier = Math.pow(normalizedWaist, 0.7);
+      abdomenModifier = Math.pow(normalizedWaist, 0.8);
 
-      // BOOST para Síndrome Metabólica Central (barriga de chopp)
-      // Se BMI < 30 mas Cintura alta -> Enfatizar barriga
-      if (bmi < 30 && normalizedWaist > 0.5) {
-        abdomenModifier *= 1.2;
+      // BOOST para Síndrome Metabólica Central (barriga proeminente com IMC menor)
+      if (bmi < 28 && normalizedWaist > 0.6) {
+        abdomenModifier = Math.min(0.8, abdomenModifier * 1.25);
       }
     } else {
-      // Estimativa baseada em BMI se sem cintura
-      abdomenModifier = weightModifier * 0.9;
+      // Estimativa baseada em BMI: se sobrepeso, abdômen ganha precedência
+      abdomenModifier = weightModifier * (bmi > 30 ? 1.1 : 0.95);
     }
 
     // === MUSCLE MASS: Bioimpedance vs Activity ===
