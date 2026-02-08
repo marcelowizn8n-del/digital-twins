@@ -18,6 +18,11 @@ services:
     # but good for standalone generic use
     command: >
       sh -c "mkdir -p /app/prisma/data && chown -R nextjs:nodejs /app/prisma/data && chmod -R 777 /app/prisma/data && npx prisma@6.7.0 db push --accept-data-loss --skip-generate && npx prisma@6.7.0 db seed && node server.js"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.digitaltwin.rule=Host(`digitaltwin.dttools.app`)"
+      - "traefik.http.routers.digitaltwin.entrypoints=https"
+      - "traefik.http.routers.digitaltwin.tls.certresolver=letsencrypt"
     networks:
       - default
       - easypanel
