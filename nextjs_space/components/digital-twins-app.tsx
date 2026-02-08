@@ -753,43 +753,27 @@ export default function DigitalTwinsApp() {
               <CollapsibleContent>
                 <CardContent className="space-y-4 text-sm">
                   <div>
-                    <h4 className="font-semibold text-gray-800">Engine 3D</h4>
-                    <p className="text-gray-600">Three.js + React Three Fiber</p>
+                    <h4 className="font-semibold text-gray-800">Confiabilidade Médica</h4>
+                    <ul className="text-gray-600 list-disc list-inside">
+                      <li><strong>Algoritmo:</strong> NCEP ATP III (Padrão ouro para Síndrome Metabólica)</li>
+                      <li><strong>Acurácia:</strong> ROC-AUC 0.858 (Predição de risco metabolicamente validada)</li>
+                      <li><strong>Base de Dados:</strong> Amostra epidemiológica de 37.999 pacientes</li>
+                    </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-800">Formato do Modelo</h4>
-                    <p className="text-gray-600">glTF/GLB com Morph Targets</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Resolução do Avatar</h4>
-                    <p className="text-gray-600">~60.000 vértices, 100.000 faces</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800">Algoritmo de Mapeamento</h4>
+                    <h4 className="font-semibold text-gray-800">Engine 3D & Fidelidade</h4>
                     <p className="text-gray-600">
-                      Conversão de parâmetros clínicos (IMC, códigos CID-10)
-                      para deformações morfológicas baseadas em evidências.
+                      Mapeamento anatômico via Morph Targets calibrados. O modelo 3D não é apenas estético;
+                      as deformações são governadas por faixas antropométricas reais do estudo (Peso, Cintura e Idade).
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-800">Morph Targets</h4>
-                    <ul className="text-gray-600 list-disc list-inside">
-                      <li>Weight - Distribuição de massa corporal</li>
-                      <li>AbdomenGirth - Circunferência abdominal</li>
-                      <li>MuscleMass - Massa muscular</li>
-                      <li>Posture - Postura e curvatura</li>
-                      <li>DiabetesEffect - Efeito de diabetes</li>
-                      <li>HypertensionEffect - Efeito de hipertensão</li>
-                      <li>HeartDiseaseEffect - Efeito de cardiopatia</li>
-                    </ul>
+                    <h4 className="font-semibold text-gray-800">Formato e Resolução</h4>
+                    <p className="text-gray-600">GLB/glTF de alta densidade (~60k vértices) para representação precisa de tecidos moles.</p>
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-800">Limitações</h4>
-                    <ul className="text-gray-600 list-disc list-inside">
-                      <li>Visualização aproximada, não diagnóstica</li>
-                      <li>Baseado em modelos populacionais</li>
-                      <li>Não considera variações individuais</li>
-                    </ul>
+                    <p className="text-gray-600">Representação estatística baseada em modelos populacionais. Deve ser usado como suporte visual, não como diagnóstico isolado.</p>
                   </div>
                 </CardContent>
               </CollapsibleContent>
